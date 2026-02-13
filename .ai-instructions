@@ -67,6 +67,15 @@ Clarity and correctness matter more than stability at this stage.
 
 ---
 
+## Testing Structure
+
+- Tests should mirror the `src/level` directory structure when practical.
+- Core modules (e.g. `level/config.py`) should have corresponding tests (e.g. `tests/test_config.py`).
+- Command modules (e.g. `level/commands/config.py`) should be tested under `tests/commands/`.
+- Avoid flat, ambiguous test naming as the project grows.
+
+---
+
 ## Style
 
 - Type hints are required for all public functions.

@@ -79,7 +79,11 @@ def handle_config_set(args: argparse.Namespace) -> None:
         print("[level] Usage: level config set <key> <value>")
         return
 
-    save_config(context, {args.key: args.value})
+    try:
+        save_config(context, {args.key: args.value})
+    except ValueError as e:
+        print(f"[level] {e}")
+        return
 
     print(f"[level] Set {args.key} = {args.value}")
 
