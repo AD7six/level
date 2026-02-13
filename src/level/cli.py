@@ -5,12 +5,13 @@ Dispatcher-based CLI for the `level` project.
 """
 
 import argparse
-from typing import Callable
 
 import importlib
 import pkgutil
 import level.commands
-
+import sys
+from pathlib import Path
+from typing import Optional
 
 # ---------------------------------------------------------------------------
 # Registration Helpers
@@ -30,9 +31,14 @@ def register_command(
 # ---------------------------------------------------------------------------
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser(prog_name: Optional[str] = None) -> argparse.ArgumentParser:
+    # Use the executable name as the program name for help messages, except if
+    # explicitly provided (tests)
+    if prog_name is None:
+        prog_name = Path(sys.argv[0]).name
+
     parser = argparse.ArgumentParser(
-        prog="level",
+        prog=prog_name,
         description="A personal career operating system for engineers.",
     )
 

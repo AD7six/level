@@ -1,4 +1,3 @@
-
 """
 Stats command module.
 
@@ -6,7 +5,6 @@ Responsible for registering and handling `level stats` subcommands.
 """
 
 import argparse
-
 
 # ---------------------------------------------------------------------------
 # Handlers

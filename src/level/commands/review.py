@@ -6,7 +6,6 @@ Responsible for registering and handling `level review` subcommands.
 
 import argparse
 
-
 # ---------------------------------------------------------------------------
 # Handlers
 # ---------------------------------------------------------------------------

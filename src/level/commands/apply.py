@@ -6,7 +6,6 @@ Responsible for registering and handling `level apply` subcommands.
 
 import argparse
 
-
 # ---------------------------------------------------------------------------
 # Handlers
 # ---------------------------------------------------------------------------

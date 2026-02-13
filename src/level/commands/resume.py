@@ -6,7 +6,6 @@ Responsible for registering and handling `level resume` subcommands.
 
 import argparse
 
-
 # ---------------------------------------------------------------------------
 # Handlers
 # ---------------------------------------------------------------------------

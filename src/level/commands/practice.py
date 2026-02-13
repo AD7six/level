@@ -1,4 +1,3 @@
-
 """
 Practice command module.
 
@@ -6,7 +5,6 @@ Responsible for registering and handling `level practice` subcommands.
 """
 
 import argparse
-
 
 # ---------------------------------------------------------------------------
 # Handlers

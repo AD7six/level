@@ -1,24 +1,3 @@
-import argparse
-
-
-def handle_template_show(args: argparse.Namespace) -> None:
-    print("[level] Template:")
-
-
-def register(subparsers: argparse._SubParsersAction) -> None:
-    parser = subparsers.add_parser(
-        "template",
-        help="template commands",
-    )
-
-    subparsers = parser.add_subparsers(dest="template_command")
-
-    parser = subparsers.add_parser(
-        "show",
-        help="Template sub function",
-    )
-    parser.set_defaults(func=handle_template_show)
-
 """
 Config command module.
 
