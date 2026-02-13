@@ -1,16 +1,51 @@
 """
 Config command module.
-
-Responsible for registering and handling `level config` subcommands.
 """
 
 import argparse
-from pathlib import Path
-import os
+from typing import Callable, Tuple
 
-ENV_VAR = "LEVEL_HOME"
-DEFAULT_DIR_NAME = ".level"
-CONFIG_FILE_NAME = "config.toml"
+from level.config import (
+    build_context,
+    save_config,
+    initialize_defaults,
+)
+
+# ---------------------------------------------------------------------------
+# Doctor checks
+# ---------------------------------------------------------------------------
+
+
+def check_level_home(context, fix: bool) -> Tuple[bool, str]:
+    if context.home.exists():
+        return True, f"LEVEL_HOME exists: {context.home}"
+
+    if not fix:
+        return False, f"LEVEL_HOME missing: {context.home}"
+
+    context.home.mkdir(parents=True, exist_ok=True)
+    return True, f"LEVEL_HOME created: {context.home}"
+
+
+def check_data_dir(context, fix: bool) -> Tuple[bool, str]:
+    data_dir = context.config.data_dir or (context.home / "data")
+
+    if data_dir.exists():
+        if not data_dir.is_dir():
+            return False, f"data_dir is not a directory: {data_dir}"
+        return True, f"data_dir exists: {data_dir}"
+
+    if not fix:
+        return False, f"data_dir missing: {data_dir}"
+
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return True, f"data_dir created: {data_dir}"
+
+
+CHECKS: list[Callable] = [
+    check_level_home,
+    check_data_dir,
+]
 
 
 # ---------------------------------------------------------------------------
@@ -19,42 +54,54 @@ CONFIG_FILE_NAME = "config.toml"
 
 
 def handle_config_show(args: argparse.Namespace) -> None:
-    print("[level] Showing configuration (not yet implemented)")
+    from dataclasses import fields
+
+    context = build_context()
+    print(f"LEVEL_HOME: {context.home}")
+    print(f"Config file: {context.config_file}")
+
+    print("Config values:")
+    for field in fields(context.config):
+        value = getattr(context.config, field.name)
+        print(f"  {field.name}: {value}")
 
 
 def handle_config_set(args: argparse.Namespace) -> None:
-    if args.key is None or args.value is None:
+    context = build_context()
+
+    # If no key provided → initialize defaults
+    if args.key is None:
+        initialize_defaults(context)
+        print("[level] Configuration initialized (missing values filled with defaults)")
+        return
+
+    if args.value is None:
         print("[level] Usage: level config set <key> <value>")
         return
 
-    # Resolve level home
-    level_home = Path(
-        os.environ.get(ENV_VAR, Path.home() / DEFAULT_DIR_NAME)
-    ).expanduser()
-
-    level_home.mkdir(parents=True, exist_ok=True)
-
-    config_file = level_home / CONFIG_FILE_NAME
-
-    # Very simple key=value storage (TOML-like but minimal)
-    existing = {}
-    if config_file.exists():
-        for line in config_file.read_text().splitlines():
-            if "=" in line:
-                k, v = line.split("=", 1)
-                existing[k.strip()] = v.strip()
-
-    existing[args.key] = args.value
-
-    content = "\n".join(f"{k} = {v}" for k, v in existing.items())
-    config_file.write_text(content + "\n")
+    save_config(context, {args.key: args.value})
 
     print(f"[level] Set {args.key} = {args.value}")
-    print(f"[level] Config file: {config_file}")
 
 
 def handle_config_doctor(args: argparse.Namespace) -> None:
-    print("[level] Validating setup (not yet implemented)")
+    context = build_context()
+
+    fix = getattr(args, "fix", False)
+
+    print("Running configuration diagnostics...\n")
+
+    all_ok = True
+
+    for check in CHECKS:
+        ok, message = check(context, fix)
+        status = "✔" if ok else "✖"
+        print(f"{status} {message}")
+        if not ok:
+            all_ok = False
+
+    if not all_ok and not fix:
+        print("\nRun with --fix to attempt automatic repairs.")
 
 
 # ---------------------------------------------------------------------------
@@ -90,5 +137,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     parser_doctor = config_subparsers.add_parser(
         "doctor",
         help="Validate setup",
+    )
+    parser_doctor.add_argument(
+        "--fix",
+        action="store_true",
+        help="Attempt to automatically fix detected issues",
     )
     parser_doctor.set_defaults(func=handle_config_doctor)

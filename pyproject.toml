@@ -3,7 +3,7 @@ name = "level"
 version = "0.1.0"
 description = "A personal career operating system for engineers."
 authors = [{ name = "Andy Dawson" }]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
