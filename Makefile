@@ -23,11 +23,11 @@ lint: ## Lint all python files
 
 .PHONY: typecheck
 typecheck: ## Run mypy
-	$(PYTHON) -m mypy src
+	$(PYTHON) -m mypy
 
 .PHONY: test
 test: ## Run unit tests
-	$(PYTHON) -m pytest -q
+	$(PYTHON) -m pytest
 
 .PHONY: clean
 clean: ## Remove venv and artifacts
