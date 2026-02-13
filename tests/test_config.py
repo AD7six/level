@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pytest
@@ -10,7 +9,6 @@ from level.config import (
     initialize_defaults,
     build_context,
 )
-
 
 # ---------------------------------------------------------------------------
 # resolve_level_home
@@ -53,7 +51,7 @@ def test_resolve_level_home(monkeypatch, tmp_path, explicit, env_value, expect_d
         (None, None, False),
         ('editor = "vim"\n', "vim", False),
         ('unknown = "value"\n', None, True),
-        ('editor = 123\n', None, True),
+        ("editor = 123\n", None, True),
     ],
 )
 def test_load_config(tmp_path, content, expected_editor, should_raise):
@@ -97,7 +95,7 @@ def test_initialize_defaults_creates_missing(tmp_path, monkeypatch):
     content = config_file.read_text()
 
     assert 'editor = "vim"' in content
-    assert 'data_dir = ' in content
+    assert "data_dir = " in content
 
 
 def test_initialize_defaults_preserves_existing(tmp_path, monkeypatch):
