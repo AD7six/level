@@ -3,12 +3,13 @@ Config command module.
 """
 
 import argparse
-from typing import Any, Callable, Tuple
+from collections.abc import Callable
+from typing import Any
 
 from level.config import (
     build_context,
-    save_config,
     initialize_defaults,
+    save_config,
 )
 
 # ---------------------------------------------------------------------------
@@ -16,7 +17,7 @@ from level.config import (
 # ---------------------------------------------------------------------------
 
 
-def check_level_home(context: Any, fix: bool) -> Tuple[bool, str]:
+def check_level_home(context: Any, fix: bool) -> tuple[bool, str]:
     if context.home.exists():
         return True, f"LEVEL_HOME exists: {context.home}"
 
@@ -27,7 +28,7 @@ def check_level_home(context: Any, fix: bool) -> Tuple[bool, str]:
     return True, f"LEVEL_HOME created: {context.home}"
 
 
-def check_data_dir(context: Any, fix: bool) -> Tuple[bool, str]:
+def check_data_dir(context: Any, fix: bool) -> tuple[bool, str]:
     data_dir = context.config.data_dir or (context.home / "data")
 
     if data_dir.exists():
@@ -42,7 +43,7 @@ def check_data_dir(context: Any, fix: bool) -> Tuple[bool, str]:
     return True, f"data_dir created: {data_dir}"
 
 
-CHECKS: list[Callable[[Any, bool], Tuple[bool, str]]] = [
+CHECKS: list[Callable[[Any, bool], tuple[bool, str]]] = [
     check_level_home,
     check_data_dir,
 ]

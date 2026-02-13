@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 
 from level.commands.config import (
-    handle_config_set,
     handle_config_doctor,
+    handle_config_set,
 )
 
 # ---------------------------------------------------------------------------

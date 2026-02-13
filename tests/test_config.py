@@ -3,11 +3,11 @@ from pathlib import Path
 import pytest
 
 from level.config import (
-    resolve_level_home,
-    load_config,
-    save_config,
-    initialize_defaults,
     build_context,
+    initialize_defaults,
+    load_config,
+    resolve_level_home,
+    save_config,
 )
 
 # ---------------------------------------------------------------------------

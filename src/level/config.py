@@ -15,7 +15,6 @@ import os
 import tomllib
 from dataclasses import dataclass, fields
 from pathlib import Path
-from typing import Optional
 
 
 def _allowed_keys() -> set[str]:
@@ -37,8 +36,8 @@ CONFIG_FILE_NAME = "config.toml"
 
 @dataclass(frozen=True)
 class Config:
-    data_dir: Optional[Path] = None
-    editor: Optional[str] = None
+    data_dir: Path | None = None
+    editor: str | None = None
 
 
 @dataclass(frozen=True)
@@ -53,7 +52,7 @@ class Context:
 # ---------------------------------------------------------------------------
 
 
-def resolve_level_home(explicit: Optional[str] = None) -> Path:
+def resolve_level_home(explicit: str | None = None) -> Path:
     """
     Resolve LEVEL_HOME using:
     1. Explicit override
@@ -177,7 +176,7 @@ def initialize_defaults(context: Context) -> None:
 # ---------------------------------------------------------------------------
 
 
-def build_context(explicit_home: Optional[str] = None) -> Context:
+def build_context(explicit_home: str | None = None) -> Context:
     home = resolve_level_home(explicit_home)
     config_file = home / CONFIG_FILE_NAME
     config = load_config(config_file)
