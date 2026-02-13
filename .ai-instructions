@@ -1,0 +1,90 @@
+# AI Contribution Guidelines 
+
+This file defines architectural and engineering standards that must be
+followed when modifying this repository.
+
+The goal is to keep this repo clean, intentional, and production-quality
+as it evolves.
+
+---
+
+## Core Principles
+
+### 1. Clean Code First
+
+- Prefer clarity over cleverness.
+- Small, composable functions.
+- No unnecessary abstraction.
+- No premature optimization.
+- Avoid hidden magic unless explicitly intentional (e.g., command discovery).
+
+If something feels hacky, it probably is.
+
+---
+
+### 2. Always Write Tests
+
+- New behavior must include tests.
+- Structural changes must include test updates.
+- CLI commands should be testable without invoking subprocesses.
+- Prefer unit tests over integration tests unless required.
+
+No feature is complete without tests.
+
+---
+
+### 3. No Technical Debt
+
+- Do not leave TODOs without implementing them.
+- Do not introduce placeholder code unless explicitly requested.
+- Do not defer refactors that are necessary for correctness or clarity.
+- Remove dead code immediately.
+
+If the structure needs improvement, fix it properly.
+
+---
+
+### 4. No Backwards Compatibility Before 1.0.0
+
+Until version 1.0.0:
+
+- Breaking changes are allowed.
+- Refactors are encouraged.
+- Internal APIs may change freely.
+- Command interfaces may evolve.
+
+Clarity and correctness matter more than stability at this stage.
+
+---
+
+## Architectural Expectations
+
+- Commands must be modular.
+- Command discovery must remain explicit and understandable.
+- Shared state must flow through a Context object.
+- Filesystem behavior must be predictable and testable.
+- Avoid global state.
+
+---
+
+## Style
+
+- Type hints are required for all public functions.
+- Use dataclasses for structured data.
+- Avoid large files (>300 lines) when possible.
+- Logging should use the project logger, not print(), except in CLI output.
+
+---
+
+## Philosophy
+
+This is a career operating system, not a script collection.
+
+Design for:
+- Long-term maintainability
+- Explicit structure
+- Strong separation of concerns
+- Intentional evolution
+
+Avoid shortcuts.
+Avoid entropy.
