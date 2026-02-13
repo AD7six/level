@@ -1,3 +1,4 @@
+import argparse
 import builtins
 from pathlib import Path
 
@@ -10,32 +11,25 @@ from level.commands.config import (
 from level.config import build_context
 
 
-class DummyArgs:
-    def __init__(self, key=None, value=None, fix=False):
-        self.key = key
-        self.value = value
-        self.fix = fix
-
-
 # ---------------------------------------------------------------------------
 # config set (command layer)
 # ---------------------------------------------------------------------------
 
 
-def test_config_set_invalid_key(tmp_path, monkeypatch, capsys):
+def test_config_set_invalid_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
 
-    args = DummyArgs(key="invalid", value="value")
+    args = argparse.Namespace(key="invalid", value="value", fix=False)
     handle_config_set(args)
 
     captured = capsys.readouterr()
     assert "Invalid config key" in captured.out
 
 
-def test_config_set_valid_key(tmp_path, monkeypatch):
+def test_config_set_valid_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
 
-    args = DummyArgs(key="editor", value="nano")
+    args = argparse.Namespace(key="editor", value="nano", fix=False)
     handle_config_set(args)
 
     config_file = tmp_path / "config.toml"
@@ -43,10 +37,10 @@ def test_config_set_valid_key(tmp_path, monkeypatch):
     assert 'editor = "nano"' in config_file.read_text()
 
 
-def test_config_set_initialize_defaults(tmp_path, monkeypatch):
+def test_config_set_initialize_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
 
-    args = DummyArgs()
+    args = argparse.Namespace(key=None, value=None, fix=False)
     handle_config_set(args)
 
     config_file = tmp_path / "config.toml"
@@ -61,21 +55,21 @@ def test_config_set_initialize_defaults(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_config_doctor_reports_missing_dirs(tmp_path, monkeypatch, capsys):
+def test_config_doctor_reports_missing_dirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     monkeypatch.setenv("LEVEL_HOME", str(tmp_path / "missing_home"))
 
-    args = DummyArgs(fix=False)
+    args = argparse.Namespace(key=None, value=None, fix=False)
     handle_config_doctor(args)
 
     captured = capsys.readouterr()
     assert "✖" in captured.out
 
 
-def test_config_doctor_fix_creates_dirs(tmp_path, monkeypatch, capsys):
+def test_config_doctor_fix_creates_dirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     level_home = tmp_path / "missing_home"
     monkeypatch.setenv("LEVEL_HOME", str(level_home))
 
-    args = DummyArgs(fix=True)
+    args = argparse.Namespace(key=None, value=None, fix=True)
     handle_config_doctor(args)
 
     captured = capsys.readouterr()

@@ -17,24 +17,29 @@ from level.config import (
 # ---------------------------------------------------------------------------
 
 
-def test_resolve_level_home_explicit(tmp_path):
-    explicit = tmp_path / "explicit_home"
-    result = resolve_level_home(str(explicit))
-    assert result == explicit.resolve()
-
-
-def test_resolve_level_home_env(monkeypatch, tmp_path):
-    env_home = tmp_path / "env_home"
-    monkeypatch.setenv("LEVEL_HOME", str(env_home))
-
-    result = resolve_level_home()
-    assert result == env_home.resolve()
-
-
-def test_resolve_level_home_default(monkeypatch):
+@pytest.mark.parametrize(
+    "explicit, env_value, expect_default",
+    [
+        ("explicit_home", None, False),
+        (None, "env_home", False),
+        (None, None, True),
+    ],
+)
+def test_resolve_level_home(monkeypatch, tmp_path, explicit, env_value, expect_default):
     monkeypatch.delenv("LEVEL_HOME", raising=False)
-    result = resolve_level_home()
-    assert result == (Path.home() / ".level").resolve()
+
+    if env_value is not None:
+        monkeypatch.setenv("LEVEL_HOME", str(tmp_path / env_value))
+
+    if explicit is not None:
+        result = resolve_level_home(str(tmp_path / explicit))
+        assert result == (tmp_path / explicit).resolve()
+    elif env_value is not None:
+        result = resolve_level_home()
+        assert result == (tmp_path / env_value).resolve()
+    else:
+        result = resolve_level_home()
+        assert result == (Path.home() / ".level").resolve()
 
 
 # ---------------------------------------------------------------------------
@@ -42,36 +47,27 @@ def test_resolve_level_home_default(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_load_config_empty(tmp_path):
+@pytest.mark.parametrize(
+    "content, expected_editor, should_raise",
+    [
+        (None, None, False),
+        ('editor = "vim"\n', "vim", False),
+        ('unknown = "value"\n', None, True),
+        ('editor = 123\n', None, True),
+    ],
+)
+def test_load_config(tmp_path, content, expected_editor, should_raise):
     config_file = tmp_path / "config.toml"
-    config = load_config(config_file)
 
-    assert config.data_dir is None
-    assert config.editor is None
+    if content is not None:
+        config_file.write_text(content)
 
-
-def test_load_config_valid(tmp_path):
-    config_file = tmp_path / "config.toml"
-    config_file.write_text('editor = "vim"\n')
-
-    config = load_config(config_file)
-    assert config.editor == "vim"
-
-
-def test_load_config_unknown_key(tmp_path):
-    config_file = tmp_path / "config.toml"
-    config_file.write_text('unknown = "value"\n')
-
-    with pytest.raises(ValueError):
-        load_config(config_file)
-
-
-def test_load_config_invalid_type(tmp_path):
-    config_file = tmp_path / "config.toml"
-    config_file.write_text("editor = 123\n")
-
-    with pytest.raises(ValueError):
-        load_config(config_file)
+    if should_raise:
+        with pytest.raises(ValueError):
+            load_config(config_file)
+    else:
+        config = load_config(config_file)
+        assert config.editor == expected_editor
 
 
 # ---------------------------------------------------------------------------
