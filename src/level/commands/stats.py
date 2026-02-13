@@ -5,6 +5,7 @@ Responsible for registering and handling `level stats` subcommands.
 """
 
 import argparse
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Handlers
@@ -32,7 +33,7 @@ def handle_stats_progression(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:
+def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     stats_parser = subparsers.add_parser(
         "stats",
         help="Career statistics and metrics",

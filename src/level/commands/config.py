@@ -3,7 +3,7 @@ Config command module.
 """
 
 import argparse
-from typing import Callable, Tuple
+from typing import Any, Callable, Tuple
 
 from level.config import (
     build_context,
@@ -16,7 +16,7 @@ from level.config import (
 # ---------------------------------------------------------------------------
 
 
-def check_level_home(context, fix: bool) -> Tuple[bool, str]:
+def check_level_home(context: Any, fix: bool) -> Tuple[bool, str]:
     if context.home.exists():
         return True, f"LEVEL_HOME exists: {context.home}"
 
@@ -27,7 +27,7 @@ def check_level_home(context, fix: bool) -> Tuple[bool, str]:
     return True, f"LEVEL_HOME created: {context.home}"
 
 
-def check_data_dir(context, fix: bool) -> Tuple[bool, str]:
+def check_data_dir(context: Any, fix: bool) -> Tuple[bool, str]:
     data_dir = context.config.data_dir or (context.home / "data")
 
     if data_dir.exists():
@@ -42,7 +42,7 @@ def check_data_dir(context, fix: bool) -> Tuple[bool, str]:
     return True, f"data_dir created: {data_dir}"
 
 
-CHECKS: list[Callable] = [
+CHECKS: list[Callable[[Any, bool], Tuple[bool, str]]] = [
     check_level_home,
     check_data_dir,
 ]
@@ -109,7 +109,7 @@ def handle_config_doctor(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:
+def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     config_parser = subparsers.add_parser(
         "config",
         help="Configuration and environment commands",

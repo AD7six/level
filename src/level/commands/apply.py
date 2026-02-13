@@ -5,6 +5,7 @@ Responsible for registering and handling `level apply` subcommands.
 """
 
 import argparse
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Handlers
@@ -40,7 +41,7 @@ def handle_apply_timeline(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:
+def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     apply_parser = subparsers.add_parser(
         "apply",
         help="Application tracking commands",

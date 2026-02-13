@@ -5,6 +5,7 @@ Responsible for registering and handling `level review` subcommands.
 """
 
 import argparse
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Handlers
@@ -32,7 +33,7 @@ def handle_review_history(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:
+def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     review_parser = subparsers.add_parser(
         "review",
         help="Career review commands",

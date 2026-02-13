@@ -8,9 +8,10 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "mypy",
     "black",
+    "mypy",
+    "pytest",
+    "pytest-cov",
     "ruff",
 ]
 

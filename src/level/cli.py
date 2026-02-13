@@ -11,7 +11,7 @@ import pkgutil
 import level.commands
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any, cast
 
 # ---------------------------------------------------------------------------
 # Registration Helpers
@@ -19,11 +19,11 @@ from typing import Optional
 
 
 def register_command(
-    subparsers: argparse._SubParsersAction,
+    subparsers: argparse._SubParsersAction[Any],
     name: str,
     help_text: str,
 ) -> argparse.ArgumentParser:
-    return subparsers.add_parser(name, help=help_text)
+    return cast(argparse.ArgumentParser, subparsers.add_parser(name, help=help_text))
 
 
 # ---------------------------------------------------------------------------
@@ -37,7 +37,7 @@ def build_parser(prog_name: Optional[str] = None) -> argparse.ArgumentParser:
     if prog_name is None:
         prog_name = Path(sys.argv[0]).name
 
-    parser = argparse.ArgumentParser(
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
         prog=prog_name,
         description="A personal career operating system for engineers.",
     )
@@ -48,7 +48,7 @@ def build_parser(prog_name: Optional[str] = None) -> argparse.ArgumentParser:
         version="%(prog)s 0.1.0",
     )
 
-    subparsers = parser.add_subparsers(dest="command")
+    subparsers: argparse._SubParsersAction[Any] = parser.add_subparsers(dest="command")
 
     # Load all commands in the command folder
     for _, module_name, _ in pkgutil.iter_modules(level.commands.__path__):

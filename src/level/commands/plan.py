@@ -1,4 +1,5 @@
 import argparse
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Handlers
@@ -30,7 +31,7 @@ def handle_plan_review(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:
+def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     plan_parser = subparsers.add_parser(
         "plan",
         help="Career planning commands",

@@ -5,6 +5,7 @@ Responsible for registering and handling `level practice` subcommands.
 """
 
 import argparse
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Handlers
@@ -40,7 +41,7 @@ def handle_practice_archive(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:
+def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     practice_parser = subparsers.add_parser(
         "practice",
         help="Interview practice commands",

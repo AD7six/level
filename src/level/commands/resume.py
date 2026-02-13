@@ -5,6 +5,7 @@ Responsible for registering and handling `level resume` subcommands.
 """
 
 import argparse
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Handlers
@@ -32,7 +33,7 @@ def handle_resume_diff(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:
+def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     resume_parser = subparsers.add_parser(
         "resume",
         help="Resume management commands",
