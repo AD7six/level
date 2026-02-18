@@ -10,6 +10,7 @@ import pkgutil
 import sys
 from pathlib import Path
 from typing import Any, cast
+from level import __version__
 
 import level.commands
 
@@ -45,7 +46,7 @@ def build_parser(prog_name: str | None = None) -> argparse.ArgumentParser:
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s 0.1.0",
+        version=f"%(prog)s {__version__}",
     )
 
     subparsers: argparse._SubParsersAction[Any] = parser.add_subparsers(dest="command")
