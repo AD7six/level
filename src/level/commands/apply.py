@@ -5,7 +5,6 @@ Responsible for registering and handling `level apply` subcommands.
 """
 
 import argparse
-from typing import Any
 
 from level.applications import (
     archive_application,
@@ -15,7 +14,6 @@ from level.applications import (
     move_application,
 )
 from level.config import build_context
-
 
 # ---------------------------------------------------------------------------
 # Handlers

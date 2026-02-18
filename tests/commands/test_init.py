@@ -1,12 +1,9 @@
-from level.config import build_context, get_data_root
 import argparse
-from pathlib import Path
-
-import pytest
 
 from level.commands.init import (
     handle_init,
 )
+from level.config import build_context, get_data_root
 
 # ---------------------------------------------------------------------------
 # init
@@ -14,6 +11,7 @@ from level.commands.init import (
 # Note these tests overlap with config doctor --fix, but we want to ensure the
 # init command properly delegates to the diagnostics engine.
 # ---------------------------------------------------------------------------
+
 
 def test_init_always_fixes(tmp_path, monkeypatch):
     level_home = tmp_path / "missing_home"
@@ -23,12 +21,14 @@ def test_init_always_fixes(tmp_path, monkeypatch):
 
     assert level_home.exists()
 
+
 def test_init_creates_managed_domains(tmp_path, monkeypatch):
     monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
 
     handle_init(argparse.Namespace())
 
     assert (tmp_path / "applications").exists()
+
 
 def test_init_is_idempotent(tmp_path, monkeypatch):
     monkeypatch.setenv("LEVEL_HOME", str(tmp_path))

@@ -242,18 +242,18 @@ def initialize_repository(context: Context) -> list[Path]:
     return created
 
 
-
 # ---------------------------------------------------------------------------
 # Diagnostics
 # ---------------------------------------------------------------------------
 
-from typing import Callable
-
+from collections.abc import Callable
 
 DIAGNOSTIC_REGISTRY: list[Callable[[Context, bool], CheckResult]] = []
 
 
-def register_diagnostic(func: Callable[[Context, bool], CheckResult]) -> Callable[[Context, bool], CheckResult]:
+def register_diagnostic(
+    func: Callable[[Context, bool], CheckResult],
+) -> Callable[[Context, bool], CheckResult]:
     DIAGNOSTIC_REGISTRY.append(func)
     return func
 

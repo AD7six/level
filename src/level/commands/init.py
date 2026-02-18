@@ -1,5 +1,3 @@
-
-
 import argparse
 
 from level.config import build_context, run_diagnostics

@@ -1,15 +1,12 @@
-
-
 from __future__ import annotations
 
+import tomllib
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final, Iterable
-
-import tomllib
+from typing import Final
 
 from level.config import Context, get_data_root
-
 
 # ---------------------------------------------------------------------------
 # State machine
@@ -95,7 +92,9 @@ def create_application(context: Context, slug: str) -> Application:
     return Application(slug=slug, state="drafts", path=path)
 
 
-def list_applications(context: Context, state: str | None = None) -> Iterable[Application]:
+def list_applications(
+    context: Context, state: str | None = None
+) -> Iterable[Application]:
     root = _applications_root(context)
 
     states = {state} if state else STATES
@@ -136,9 +135,7 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
     if meta_file.exists():
         data = tomllib.loads(meta_file.read_text())
         data["state"] = new_state
-        meta_file.write_text(
-            f'slug = "{data["slug"]}"\nstate = "{new_state}"\n'
-        )
+        meta_file.write_text(f'slug = "{data["slug"]}"\nstate = "{new_state}"\n')
 
     return Application(slug=slug, state=new_state, path=new_path)
 

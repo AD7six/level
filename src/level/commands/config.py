@@ -3,7 +3,6 @@ Config command module.
 """
 
 import argparse
-from collections.abc import Callable
 from typing import Any
 
 from level.config import (
@@ -12,7 +11,6 @@ from level.config import (
     run_diagnostics,
     save_config,
 )
-
 
 # ---------------------------------------------------------------------------
 # Handlers

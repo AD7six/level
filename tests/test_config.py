@@ -157,4 +157,6 @@ def test_run_diagnostics_managed_domains(tmp_path, monkeypatch):
 
     # After fix, managed domains should exist
     results = run_diagnostics(context, fix=False)
-    assert all(r.ok for r in results if "managed" in r.message or "All required" in r.message)
+    assert all(
+        r.ok for r in results if "managed" in r.message or "All required" in r.message
+    )

@@ -1,8 +1,4 @@
-
-
 import argparse
-
-import pytest
 
 from level.commands.apply import (
     handle_apply_archive,
@@ -12,7 +8,6 @@ from level.commands.apply import (
     handle_apply_status,
 )
 from level.config import build_context
-
 
 # ---------------------------------------------------------------------------
 # helpers

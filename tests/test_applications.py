@@ -1,5 +1,3 @@
-
-
 import pytest
 
 from level.applications import (
@@ -12,7 +10,6 @@ from level.applications import (
     move_application,
 )
 from level.config import build_context
-
 
 # ---------------------------------------------------------------------------
 # helpers
