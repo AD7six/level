@@ -73,6 +73,9 @@ Clarity and correctness matter more than stability at this stage.
 - Core modules (e.g. `level/config.py`) should have corresponding tests (e.g. `tests/test_config.py`).
 - Command modules (e.g. `level/commands/config.py`) should be tested under `tests/commands/`.
 - Avoid flat, ambiguous test naming as the project grows.
+- Prefer `pytest.mark.parametrize` when testing multiple input permutations of the same behavior.
+- Tests should be easy to extend by adding new cases without duplicating test logic.
+- Avoid repetitive test bodies when parametrization improves clarity.
 
 ---
 
