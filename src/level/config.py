@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 import tomllib
+from collections.abc import Callable
 from dataclasses import dataclass, fields
 from pathlib import Path
 
@@ -245,8 +246,6 @@ def initialize_repository(context: Context) -> list[Path]:
 # ---------------------------------------------------------------------------
 # Diagnostics
 # ---------------------------------------------------------------------------
-
-from collections.abc import Callable
 
 DIAGNOSTIC_REGISTRY: list[Callable[[Context, bool], CheckResult]] = []
 
