@@ -65,6 +65,12 @@ class Context:
     config: Config
 
 
+@dataclass(frozen=True)
+class CheckResult:
+    ok: bool
+    message: str
+
+
 # ---------------------------------------------------------------------------
 # Resolution
 # ---------------------------------------------------------------------------
@@ -234,6 +240,73 @@ def initialize_repository(context: Context) -> list[Path]:
     created = ensure_managed_structure(context)
 
     return created
+
+
+# ---------------------------------------------------------------------------
+# Diagnostics
+# ---------------------------------------------------------------------------
+
+
+def run_diagnostics(context: Context, fix: bool) -> list[CheckResult]:
+    """
+    Run configuration diagnostics.
+
+    - Validates LEVEL_HOME
+    - Validates data root
+    - Validates required managed domains
+    - Applies fixes if requested
+    """
+    results: list[CheckResult] = []
+
+    # LEVEL_HOME
+    if context.home.exists():
+        results.append(CheckResult(True, f"LEVEL_HOME exists: {context.home}"))
+    else:
+        if fix:
+            context.home.mkdir(parents=True, exist_ok=True)
+            results.append(CheckResult(True, f"LEVEL_HOME created: {context.home}"))
+        else:
+            results.append(CheckResult(False, f"LEVEL_HOME missing: {context.home}"))
+
+    # Data root
+    data_root = get_data_root(context)
+    if data_root.exists():
+        if data_root.is_dir():
+            results.append(CheckResult(True, f"data_root exists: {data_root}"))
+        else:
+            results.append(CheckResult(False, f"data_root is not a directory: {data_root}"))
+    else:
+        if fix:
+            data_root.mkdir(parents=True, exist_ok=True)
+            results.append(CheckResult(True, f"data_root created: {data_root}"))
+        else:
+            results.append(CheckResult(False, f"data_root missing: {data_root}"))
+
+    # Managed domains
+    missing_domains: list[str] = []
+    for domain, meta in MANAGED_DOMAINS.items():
+        if not meta.get("required", False):
+            continue
+
+        path = data_root / domain
+        if path.exists():
+            results.append(CheckResult(True, f"managed domain exists: {path}"))
+        else:
+            missing_domains.append(domain)
+
+    if missing_domains and fix:
+        ensure_managed_structure(context)
+        for domain in missing_domains:
+            results.append(
+                CheckResult(True, f"managed domain created: {data_root / domain}")
+            )
+    elif missing_domains:
+        for domain in missing_domains:
+            results.append(
+                CheckResult(False, f"managed domain missing: {data_root / domain}")
+            )
+
+    return results
 
 
 # ---------------------------------------------------------------------------

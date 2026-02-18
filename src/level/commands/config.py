@@ -9,44 +9,9 @@ from typing import Any
 from level.config import (
     build_context,
     initialize_defaults,
+    run_diagnostics,
     save_config,
 )
-
-# ---------------------------------------------------------------------------
-# Doctor checks
-# ---------------------------------------------------------------------------
-
-
-def check_level_home(context: Any, fix: bool) -> tuple[bool, str]:
-    if context.home.exists():
-        return True, f"LEVEL_HOME exists: {context.home}"
-
-    if not fix:
-        return False, f"LEVEL_HOME missing: {context.home}"
-
-    context.home.mkdir(parents=True, exist_ok=True)
-    return True, f"LEVEL_HOME created: {context.home}"
-
-
-def check_data_dir(context: Any, fix: bool) -> tuple[bool, str]:
-    data_dir = context.config.data_dir or (context.home / "data")
-
-    if data_dir.exists():
-        if not data_dir.is_dir():
-            return False, f"data_dir is not a directory: {data_dir}"
-        return True, f"data_dir exists: {data_dir}"
-
-    if not fix:
-        return False, f"data_dir missing: {data_dir}"
-
-    data_dir.mkdir(parents=True, exist_ok=True)
-    return True, f"data_dir created: {data_dir}"
-
-
-CHECKS: list[Callable[[Any, bool], tuple[bool, str]]] = [
-    check_level_home,
-    check_data_dir,
-]
 
 
 # ---------------------------------------------------------------------------
@@ -91,18 +56,17 @@ def handle_config_set(args: argparse.Namespace) -> None:
 
 def handle_config_doctor(args: argparse.Namespace) -> None:
     context = build_context()
-
     fix = getattr(args, "fix", False)
 
     print("Running configuration diagnostics...\n")
 
-    all_ok = True
+    results = run_diagnostics(context, fix)
 
-    for check in CHECKS:
-        ok, message = check(context, fix)
-        status = "✔" if ok else "✖"
-        print(f"{status} {message}")
-        if not ok:
+    all_ok = True
+    for result in results:
+        status = "✔" if result.ok else "✖"
+        print(f"{status} {result.message}")
+        if not result.ok:
             all_ok = False
 
     if not all_ok and not fix:
