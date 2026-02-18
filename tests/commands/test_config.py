@@ -61,11 +61,11 @@ def test_config_doctor_reports_missing_dirs(
 ) -> None:
     monkeypatch.setenv("LEVEL_HOME", str(tmp_path / "missing_home"))
 
-    args = argparse.Namespace(key=None, value=None, fix=False)
+    args = argparse.Namespace(fix=False)
     handle_config_doctor(args)
 
     captured = capsys.readouterr()
-    assert "✖" in captured.out
+    assert "LEVEL_HOME missing" in captured.out or "data_root missing" in captured.out
 
 
 def test_config_doctor_fix_creates_dirs(
@@ -74,10 +74,10 @@ def test_config_doctor_fix_creates_dirs(
     level_home = tmp_path / "missing_home"
     monkeypatch.setenv("LEVEL_HOME", str(level_home))
 
-    args = argparse.Namespace(key=None, value=None, fix=True)
+    args = argparse.Namespace(fix=True)
     handle_config_doctor(args)
 
     captured = capsys.readouterr()
 
     assert level_home.exists()
-    assert "✔" in captured.out
+    assert "created" in captured.out

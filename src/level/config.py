@@ -242,69 +242,78 @@ def initialize_repository(context: Context) -> list[Path]:
     return created
 
 
+
 # ---------------------------------------------------------------------------
 # Diagnostics
 # ---------------------------------------------------------------------------
 
+from typing import Callable
 
-def run_diagnostics(context: Context, fix: bool) -> list[CheckResult]:
-    """
-    Run configuration diagnostics.
 
-    - Validates LEVEL_HOME
-    - Validates data root
-    - Validates required managed domains
-    - Applies fixes if requested
-    """
-    results: list[CheckResult] = []
+DIAGNOSTIC_REGISTRY: list[Callable[[Context, bool], CheckResult]] = []
 
-    # LEVEL_HOME
+
+def register_diagnostic(func: Callable[[Context, bool], CheckResult]) -> Callable[[Context, bool], CheckResult]:
+    DIAGNOSTIC_REGISTRY.append(func)
+    return func
+
+
+@register_diagnostic
+def check_level_home(context: Context, fix: bool) -> CheckResult:
     if context.home.exists():
-        results.append(CheckResult(True, f"LEVEL_HOME exists: {context.home}"))
-    else:
-        if fix:
-            context.home.mkdir(parents=True, exist_ok=True)
-            results.append(CheckResult(True, f"LEVEL_HOME created: {context.home}"))
-        else:
-            results.append(CheckResult(False, f"LEVEL_HOME missing: {context.home}"))
+        return CheckResult(True, f"LEVEL_HOME exists: {context.home}")
 
-    # Data root
+    if fix:
+        context.home.mkdir(parents=True, exist_ok=True)
+        return CheckResult(True, f"LEVEL_HOME created: {context.home}")
+
+    return CheckResult(False, f"LEVEL_HOME missing: {context.home}")
+
+
+@register_diagnostic
+def check_data_root(context: Context, fix: bool) -> CheckResult:
     data_root = get_data_root(context)
+
     if data_root.exists():
         if data_root.is_dir():
-            results.append(CheckResult(True, f"data_root exists: {data_root}"))
-        else:
-            results.append(CheckResult(False, f"data_root is not a directory: {data_root}"))
-    else:
-        if fix:
-            data_root.mkdir(parents=True, exist_ok=True)
-            results.append(CheckResult(True, f"data_root created: {data_root}"))
-        else:
-            results.append(CheckResult(False, f"data_root missing: {data_root}"))
+            return CheckResult(True, f"data_root exists: {data_root}")
+        return CheckResult(False, f"data_root is not a directory: {data_root}")
 
-    # Managed domains
-    missing_domains: list[str] = []
+    if fix:
+        data_root.mkdir(parents=True, exist_ok=True)
+        return CheckResult(True, f"data_root created: {data_root}")
+
+    return CheckResult(False, f"data_root missing: {data_root}")
+
+
+@register_diagnostic
+def check_managed_domains(context: Context, fix: bool) -> CheckResult:
+    data_root = get_data_root(context)
+
+    missing: list[str] = []
     for domain, meta in MANAGED_DOMAINS.items():
         if not meta.get("required", False):
             continue
 
         path = data_root / domain
-        if path.exists():
-            results.append(CheckResult(True, f"managed domain exists: {path}"))
-        else:
-            missing_domains.append(domain)
+        if not path.exists():
+            missing.append(domain)
 
-    if missing_domains and fix:
+    if not missing:
+        return CheckResult(True, "All required managed domains exist")
+
+    if fix:
         ensure_managed_structure(context)
-        for domain in missing_domains:
-            results.append(
-                CheckResult(True, f"managed domain created: {data_root / domain}")
-            )
-    elif missing_domains:
-        for domain in missing_domains:
-            results.append(
-                CheckResult(False, f"managed domain missing: {data_root / domain}")
-            )
+        return CheckResult(True, f"Created managed domains: {', '.join(missing)}")
+
+    return CheckResult(False, f"Missing managed domains: {', '.join(missing)}")
+
+
+def run_diagnostics(context: Context, fix: bool) -> list[CheckResult]:
+    results: list[CheckResult] = []
+
+    for check in DIAGNOSTIC_REGISTRY:
+        results.append(check(context, fix))
 
     return results
 

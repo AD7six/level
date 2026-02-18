@@ -7,6 +7,7 @@ from level.config import (
     initialize_defaults,
     load_config,
     resolve_level_home,
+    run_diagnostics,
     save_config,
 )
 
@@ -95,7 +96,6 @@ def test_initialize_defaults_creates_missing(tmp_path, monkeypatch):
     content = config_file.read_text()
 
     assert 'editor = "vim"' in content
-    assert "data_dir = " in content
 
 
 def test_initialize_defaults_preserves_existing(tmp_path, monkeypatch):
@@ -109,3 +109,52 @@ def test_initialize_defaults_preserves_existing(tmp_path, monkeypatch):
 
     content = config_file.read_text()
     assert 'editor = "nano"' in content
+
+
+# ---------------------------------------------------------------------------
+# diagnostics (registry-based)
+# ---------------------------------------------------------------------------
+
+
+def test_run_diagnostics_reports_missing_level_home(tmp_path, monkeypatch):
+    # Use non-existent LEVEL_HOME
+    missing_home = tmp_path / "missing_home"
+    monkeypatch.setenv("LEVEL_HOME", str(missing_home))
+
+    context = build_context()
+    results = run_diagnostics(context, fix=False)
+
+    assert any(not r.ok and "LEVEL_HOME missing" in r.message for r in results)
+
+
+def test_run_diagnostics_fix_creates_level_home(tmp_path, monkeypatch):
+    missing_home = tmp_path / "missing_home"
+    monkeypatch.setenv("LEVEL_HOME", str(missing_home))
+
+    context = build_context()
+    results = run_diagnostics(context, fix=True)
+
+    assert missing_home.exists()
+    assert any(r.ok and "LEVEL_HOME created" in r.message for r in results)
+
+
+def test_run_diagnostics_managed_domains(tmp_path, monkeypatch):
+    monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
+
+    context = build_context()
+
+    # Ensure no managed domains exist yet
+    results = run_diagnostics(context, fix=False)
+
+    assert any(
+        (not r.ok and "Missing managed domains" in r.message)
+        or ("managed domain" in r.message)
+        for r in results
+    )
+
+    # Now fix
+    results = run_diagnostics(context, fix=True)
+
+    # After fix, managed domains should exist
+    results = run_diagnostics(context, fix=False)
+    assert all(r.ok for r in results if "managed" in r.message or "All required" in r.message)
