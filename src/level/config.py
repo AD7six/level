@@ -16,6 +16,24 @@ import tomllib
 from dataclasses import dataclass, fields
 from pathlib import Path
 
+MANAGED_DOMAINS = {
+    "applications": {"required": True},
+    "resumes": {"required": False},
+}
+
+OPTIONAL_USER_SPACE = True
+
+
+def get_data_root(context: Context) -> Path:
+    """
+    Return the effective data root directory.
+    If config.data_dir is set, use it.
+    Otherwise fallback to LEVEL_HOME.
+    """
+    if context.config.data_dir:
+        return context.config.data_dir
+    return context.home
+
 
 def _allowed_keys() -> set[str]:
     return {f.name for f in fields(Config)}
@@ -169,6 +187,53 @@ def initialize_defaults(context: Context) -> None:
             updated[key] = defaults[key]
 
     _write_config(context.config_file, updated)
+
+
+# ---------------------------------------------------------------------------
+# Structure / Init
+# ---------------------------------------------------------------------------
+
+
+def ensure_managed_structure(context: Context) -> list[Path]:
+    """
+    Ensure managed domain directories exist.
+    Returns a list of directories that were created.
+
+    This is idempotent and safe to call multiple times.
+    Used by both `init` and `doctor --fix`.
+    """
+    created: list[Path] = []
+
+    data_root = get_data_root(context)
+    data_root.mkdir(parents=True, exist_ok=True)
+
+    for domain, meta in MANAGED_DOMAINS.items():
+        if not meta.get("required", False):
+            continue
+
+        path = data_root / domain
+        if not path.exists():
+            path.mkdir(parents=True, exist_ok=True)
+            created.append(path)
+
+    return created
+
+
+def initialize_repository(context: Context) -> list[Path]:
+    """
+    Initialize LEVEL_HOME and managed data structure.
+
+    - Ensures config defaults exist
+    - Ensures managed domain directories exist
+    - Returns list of created directories
+    """
+    context.home.mkdir(parents=True, exist_ok=True)
+
+    initialize_defaults(context)
+
+    created = ensure_managed_structure(context)
+
+    return created
 
 
 # ---------------------------------------------------------------------------

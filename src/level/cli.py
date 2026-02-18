@@ -10,9 +10,9 @@ import pkgutil
 import sys
 from pathlib import Path
 from typing import Any, cast
-from level import __version__
 
 import level.commands
+from level import __version__
 
 # ---------------------------------------------------------------------------
 # Registration Helpers
