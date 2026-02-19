@@ -30,6 +30,7 @@ TRANSITIONS: dict[str, set[str]] = {
 # ---------------------------------------------------------------------------
 
 
+
 @dataclass(frozen=True)
 class Application:
     slug: str
@@ -50,6 +51,14 @@ class ApplicationMeta:
     company: str
     role: str
     created_at: str
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, object]) -> "ApplicationMeta":
+        return cls(
+            company=str(data.get("company", "")),
+            role=str(data.get("role", "")),
+            created_at=str(data.get("created_at", "")),
+        )
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -175,11 +184,7 @@ def list_applications(
             # Direct application directory (state/slug)
             if (entry / "meta.toml").exists():
                 raw = _load_meta(entry)
-                meta = ApplicationMeta(
-                    company=str(raw.get("company", "")),
-                    role=str(raw.get("role", "")),
-                    created_at=str(raw.get("created_at", "")),
-                )
+                meta = ApplicationMeta.from_dict(raw)
                 yield Application(
                     slug=entry.name,
                     state=s,
@@ -196,11 +201,7 @@ def list_applications(
                     continue
                 if (nested / "meta.toml").exists():
                     raw = _load_meta(nested)
-                    meta = ApplicationMeta(
-                        company=str(raw.get("company", "")),
-                        role=str(raw.get("role", "")),
-                        created_at=str(raw.get("created_at", "")),
-                    )
+                    meta = ApplicationMeta.from_dict(raw)
                     yield Application(
                         slug=nested.name,
                         state=s,
@@ -218,11 +219,7 @@ def get_application(context: Context, slug: str) -> Application:
 
     state = path.parent.name
     raw = _load_meta(path)
-    meta = ApplicationMeta(
-        company=str(raw.get("company", "")),
-        role=str(raw.get("role", "")),
-        created_at=str(raw.get("created_at", "")),
-    )
+    meta = ApplicationMeta.from_dict(raw)
     return Application(
         slug=slug,
         state=state,
@@ -246,11 +243,7 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
     app.path.rename(new_path)
 
     raw = _load_meta(new_path)
-    meta = ApplicationMeta(
-        company=str(raw.get("company", "")),
-        role=str(raw.get("role", "")),
-        created_at=str(raw.get("created_at", "")),
-    )
+    meta = ApplicationMeta.from_dict(raw)
     return Application(
         slug=slug,
         state=new_state,
@@ -259,3 +252,76 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
         role=meta.role,
         created_at=meta.created_at,
     )
+
+
+# ---------------------------------------------------------------------------
+# Doctor / Lint
+# ---------------------------------------------------------------------------
+
+
+def lint_applications(context: Context) -> list[str]:
+    """
+    Return list of structural issues found in applications directory.
+    """
+    issues: list[str] = []
+    root = _applications_root(context)
+
+    for state in STATES:
+        state_dir = root / state
+        if not state_dir.exists():
+            continue
+
+        for entry in state_dir.iterdir():
+            if not entry.is_dir():
+                continue
+
+            # Canonical: state/<slug>
+            if (entry / "meta.toml").exists():
+                continue
+
+            # Nested structure detected
+            issues.append(f"Nested structure detected: {entry}")
+
+    return issues
+
+
+def fix_applications(context: Context) -> list[str]:
+    """
+    Attempt to flatten nested application directories.
+    """
+    actions: list[str] = []
+    root = _applications_root(context)
+
+    for state in STATES:
+        state_dir = root / state
+        if not state_dir.exists():
+            continue
+
+        for entry in list(state_dir.iterdir()):
+            if not entry.is_dir():
+                continue
+
+            if (entry / "meta.toml").exists():
+                continue
+
+            # Flatten state/company/slug → state/slug
+            for nested in entry.iterdir():
+                if not nested.is_dir():
+                    continue
+                if not (nested / "meta.toml").exists():
+                    continue
+
+                target = state_dir / nested.name
+                if target.exists():
+                    raise ValueError(f"Slug collision during fix: {nested.name}")
+
+                nested.rename(target)
+                actions.append(f"Moved {nested} → {target}")
+
+            # Remove empty company folder
+            try:
+                entry.rmdir()
+            except OSError:
+                pass
+
+    return actions
