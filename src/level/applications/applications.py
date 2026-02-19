@@ -262,25 +262,46 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
 def lint_applications(context: Context) -> list[str]:
     """
     Return list of structural issues found in applications directory.
+
+    Rules:
+    - Any directory containing meta.toml is considered an application.
+    - The first path segment under applications/ must be a valid state.
+    - Canonical path must be: applications/<state>/<slug>/meta.toml
     """
     issues: list[str] = []
     root = _applications_root(context)
 
-    for state in STATES:
-        state_dir = root / state
-        if not state_dir.exists():
+    if not root.exists():
+        return issues
+
+    for meta_file in root.rglob("meta.toml"):
+        app_dir = meta_file.parent
+        rel = app_dir.relative_to(root)
+        parts = rel.parts
+
+        if not parts:
             continue
 
-        for entry in state_dir.iterdir():
-            if not entry.is_dir():
-                continue
+        state = parts[0]
 
-            # Canonical: state/<slug>
-            if (entry / "meta.toml").exists():
-                continue
+        # Unknown state
+        if state not in STATES:
+            issues.append(
+                f"Application '{rel}' has unknown state: {state}"
+            )
+            continue
 
-            # Nested structure detected
-            issues.append(f"Nested structure detected: {entry}")
+        # Load metadata to compute expected slug
+        raw = _load_meta(app_dir)
+        meta = ApplicationMeta.from_dict(raw)
+
+        expected_slug = f"{meta.created_at.replace('-', '')}-{meta.company.strip().lower().replace(' ', '-')}"
+        expected_rel = Path(state) / expected_slug
+
+        if rel != expected_rel:
+            issues.append(
+                f"Application '{rel}' is not in canonical location '{expected_rel}'"
+            )
 
     return issues
 
