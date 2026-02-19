@@ -6,6 +6,8 @@ from level.applications.applications import (
     get_application,
     list_applications,
     move_application,
+    lint_applications,
+    fix_applications,
 )
 from level.applications.schema import STATES
 from level.config import build_context
@@ -125,3 +127,91 @@ def test_states_and_transitions_consistency():
     # All transition targets must be valid states
     for targets in TRANSITIONS.values():
         assert targets.issubset(set(STATES))
+
+
+# ---------------------------------------------------------------------------
+# lint / fix
+# ---------------------------------------------------------------------------
+
+
+def test_lint_detects_non_canonical_path(tmp_path, monkeypatch):
+    context = _context(tmp_path, monkeypatch)
+
+    # Create canonical app
+    app = create_application(context, "Acme", "Role", "2026-01-01")
+
+    # Manually rename to non-canonical slug
+    bad_path = app.path.parent / "wrong-slug"
+    app.path.rename(bad_path)
+
+    issues = lint_applications(context)
+
+    assert any("not in canonical location" in i for i in issues)
+
+
+def test_lint_allows_numeric_suffix(tmp_path, monkeypatch):
+    context = _context(tmp_path, monkeypatch)
+
+    first = create_application(context, "Dup", "Role", "2026-01-01")
+    second = create_application(context, "Dup", "Role", "2026-01-01")
+
+    # second has -1 suffix
+    issues = lint_applications(context)
+
+    # No issues should be reported for valid suffixes
+    assert issues == []
+
+
+def test_fix_moves_to_canonical_location(tmp_path, monkeypatch):
+    context = _context(tmp_path, monkeypatch)
+
+    app = create_application(context, "Acme", "Role", "2026-01-01")
+
+    # Break canonical path
+    bad_path = app.path.parent / "wrong-slug"
+    app.path.rename(bad_path)
+
+    actions = fix_applications(context)
+
+    assert any("Moved" in a for a in actions)
+
+    # Canonical path should now exist
+    canonical = tmp_path / "applications" / "drafts" / "20260101-acme"
+    assert canonical.exists()
+
+
+def test_fix_adds_numeric_suffix_on_collision(tmp_path, monkeypatch):
+    context = _context(tmp_path, monkeypatch)
+
+    create_application(context, "Dup", "Role", "2026-01-01")
+
+    # Create a non-canonical directory that should canonicalize
+    # to the same slug as the existing application
+    conflict = (
+        tmp_path
+        / "applications"
+        / "drafts"
+        / "wrong-slug"
+    )
+    conflict.mkdir(parents=True)
+    (conflict / "meta.toml").write_text(
+        'company = "Dup"\nrole = "Role"\ncreated_at = "2026-01-01"\n'
+    )
+
+    actions = fix_applications(context)
+
+    # Should create a suffixed directory
+    suffixed = tmp_path / "applications" / "drafts" / "20260101-dup-1"
+    assert suffixed.exists()
+
+
+def test_fix_is_idempotent(tmp_path, monkeypatch):
+    context = _context(tmp_path, monkeypatch)
+
+    create_application(context, "Acme", "Role", "2026-01-01")
+
+    first = fix_applications(context)
+    second = fix_applications(context)
+
+    # Second run should do nothing
+    assert second == []
