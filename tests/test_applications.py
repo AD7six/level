@@ -28,9 +28,9 @@ def _context(tmp_path, monkeypatch):
 def test_create_application_creates_structure(tmp_path, monkeypatch):
     context = _context(tmp_path, monkeypatch)
 
-    app = create_application(context, "acme-sre-2026")
+    app = create_application(context, "Acme", "SRE", "2026-01-01")
 
-    assert app.slug == "acme-sre-2026"
+    assert app.slug == "20260101-acme"
     assert app.state == "drafts"
     assert app.path.exists()
     assert (app.path / "meta.toml").exists()
@@ -41,10 +41,10 @@ def test_create_application_creates_structure(tmp_path, monkeypatch):
 def test_create_application_duplicate_slug(tmp_path, monkeypatch):
     context = _context(tmp_path, monkeypatch)
 
-    create_application(context, "dup")
+    create_application(context, "Dup", "Role", "2026-01-01")
 
     with pytest.raises(ValueError):
-        create_application(context, "dup")
+        create_application(context, "Dup", "Role", "2026-01-01")
 
 
 # ---------------------------------------------------------------------------
@@ -55,13 +55,13 @@ def test_create_application_duplicate_slug(tmp_path, monkeypatch):
 def test_list_applications_by_state(tmp_path, monkeypatch):
     context = _context(tmp_path, monkeypatch)
 
-    create_application(context, "a")
-    create_application(context, "b")
+    create_application(context, "A", "Role", "2026-01-01")
+    create_application(context, "B", "Role", "2026-01-02")
 
     apps = list(list_applications(context, state="drafts"))
 
     slugs = {a.slug for a in apps}
-    assert slugs == {"a", "b"}
+    assert slugs == {"20260101-a", "20260102-b"}
 
 
 # ---------------------------------------------------------------------------
@@ -72,11 +72,11 @@ def test_list_applications_by_state(tmp_path, monkeypatch):
 def test_get_application(tmp_path, monkeypatch):
     context = _context(tmp_path, monkeypatch)
 
-    create_application(context, "foo")
+    create_application(context, "Foo", "Role", "2026-01-01")
 
-    app = get_application(context, "foo")
+    app = get_application(context, "20260101-foo")
 
-    assert app.slug == "foo"
+    assert app.slug == "20260101-foo"
     assert app.state == "drafts"
 
 
@@ -95,9 +95,9 @@ def test_get_application_missing(tmp_path, monkeypatch):
 def test_valid_transition(tmp_path, monkeypatch):
     context = _context(tmp_path, monkeypatch)
 
-    create_application(context, "foo")
+    create_application(context, "Foo", "Role", "2026-01-01")
 
-    app = move_application(context, "foo", "applied")
+    app = move_application(context, "20260101-foo", "applied")
 
     assert app.state == "applied"
 
@@ -105,10 +105,10 @@ def test_valid_transition(tmp_path, monkeypatch):
 def test_invalid_transition(tmp_path, monkeypatch):
     context = _context(tmp_path, monkeypatch)
 
-    create_application(context, "foo")
+    create_application(context, "Foo", "Role", "2026-01-01")
 
     with pytest.raises(ValueError):
-        move_application(context, "foo", "interviewing")  # invalid from drafts
+        move_application(context, "20260101-foo", "interviewing")  # invalid from drafts
 
 
 # ---------------------------------------------------------------------------
