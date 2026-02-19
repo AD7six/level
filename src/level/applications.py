@@ -13,19 +13,23 @@ from level.config import Context, get_data_root
 # ---------------------------------------------------------------------------
 
 STATES: Final[set[str]] = {
-    "drafts",
     "applied",
+    "drafts",
     "interviewing",
+    "offer",
+    "rejected",
     "stalled",
-    "archived",
+    "withdrawn",
 }
 
 TRANSITIONS: Final[dict[str, set[str]]] = {
-    "drafts": {"applied", "archived"},
-    "applied": {"interviewing", "stalled", "archived"},
-    "interviewing": {"stalled", "archived"},
-    "stalled": {"interviewing", "archived"},
-    "archived": set(),
+    "drafts": {"applied", "withdrawn"},
+    "applied": {"interviewing", "stalled", "rejected", "withdrawn"},
+    "interviewing": {"offer", "stalled", "rejected", "withdrawn"},
+    "offer": {"withdrawn"},
+    "stalled": {"interviewing", "withdrawn", "rejected"},
+    "rejected": set(),
+    "withdrawn": set(),
 }
 
 
@@ -138,7 +142,3 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
         meta_file.write_text(f'slug = "{data["slug"]}"\nstate = "{new_state}"\n')
 
     return Application(slug=slug, state=new_state, path=new_path)
-
-
-def archive_application(context: Context, slug: str) -> Application:
-    return move_application(context, slug, "archived")

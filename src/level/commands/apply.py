@@ -7,7 +7,7 @@ Responsible for registering and handling `level apply` subcommands.
 import argparse
 
 from level.applications import (
-    archive_application,
+    STATES,
     create_application,
     get_application,
     list_applications,
@@ -48,12 +48,6 @@ def handle_apply_status(args: argparse.Namespace) -> None:
     print(f"✔ Moved '{app.slug}' to '{app.state}'")
 
 
-def handle_apply_archive(args: argparse.Namespace) -> None:
-    context = build_context()
-    app = archive_application(context, args.slug)
-    print(f"✔ Archived '{app.slug}'")
-
-
 def handle_apply_timeline(args: argparse.Namespace) -> None:
     # Timeline not yet implemented – placeholder for future domain expansion
     print("Timeline not yet implemented.")
@@ -89,7 +83,7 @@ def register(
     )
     apply_list_parser.add_argument(
         "--state",
-        choices=["drafts", "applied", "interviewing", "stalled", "archived"],
+        choices=sorted(STATES),
         help="Filter by state",
     )
     apply_list_parser.set_defaults(func=handle_apply_list)
@@ -110,18 +104,10 @@ def register(
     apply_status_parser.add_argument("slug", help="Application slug")
     apply_status_parser.add_argument(
         "state",
-        choices=["drafts", "applied", "interviewing", "stalled", "archived"],
+        choices=sorted(STATES),
         help="New state",
     )
     apply_status_parser.set_defaults(func=handle_apply_status)
-
-    # apply archive
-    apply_archive_parser = apply_subparsers.add_parser(
-        "archive",
-        help="Archive completed / rejected",
-    )
-    apply_archive_parser.add_argument("slug", help="Application slug")
-    apply_archive_parser.set_defaults(func=handle_apply_archive)
 
     # apply timeline
     apply_timeline_parser = apply_subparsers.add_parser(
