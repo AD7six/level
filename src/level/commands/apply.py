@@ -98,7 +98,7 @@ def handle_apply_list(args: argparse.Namespace) -> None:
             created = app.created_at or ""
             company = app.company or ""
             role = app.role or ""
-            print(f"  {created:12}  {company:<22} {role}")
+            print(f"  {created:12}  {company:<22} {role:<40} ({app.slug})")
 
         print()
 
@@ -115,7 +115,7 @@ def handle_apply_show(args: argparse.Namespace) -> None:
     print(f"Path:       {app.path}")
 
 
-def handle_apply_status(args: argparse.Namespace) -> None:
+def handle_apply_move(args: argparse.Namespace) -> None:
     context = build_context()
     app = move_application(context, args.slug, args.state)
     print(f"✔ Moved '{app.slug}' to '{app.state}'")
@@ -178,18 +178,18 @@ def register(
     apply_show_parser.add_argument("slug", help="Application slug")
     apply_show_parser.set_defaults(func=handle_apply_show)
 
-    # apply status
-    apply_status_parser = apply_subparsers.add_parser(
-        "status",
+    # apply move
+    apply_move_parser = apply_subparsers.add_parser(
+        "move",
         help="Move between pipeline stages",
     )
-    apply_status_parser.add_argument("slug", help="Application slug")
-    apply_status_parser.add_argument(
+    apply_move_parser.add_argument("slug", help="Application slug")
+    apply_move_parser.add_argument(
         "state",
         choices=sorted(STATES),
         help="New state",
     )
-    apply_status_parser.set_defaults(func=handle_apply_status)
+    apply_move_parser.set_defaults(func=handle_apply_move)
 
     # apply timeline
     apply_timeline_parser = apply_subparsers.add_parser(
