@@ -28,12 +28,40 @@ def handle_apply_new(args: argparse.Namespace) -> None:
 
 def handle_apply_list(args: argparse.Namespace) -> None:
     context = build_context()
-    apps = list_applications(context, state=args.state)
+    apps = list(list_applications(context, state=args.state))
 
+    # Filter terminal states unless --all is provided
+    if not getattr(args, "all", False):
+        apps = [a for a in apps if a.state not in TERMINAL_STATES]
+
+    if not apps:
+        return
+
+    # Group by state in canonical order
+    grouped: dict[str, list] = {}
     for app in apps:
-        if not getattr(args, "all", False) and app.state in TERMINAL_STATES:
+        grouped.setdefault(app.state, []).append(app)
+
+    for state in STATES:
+        if state not in grouped:
             continue
-        print(f"{app.state:14} {app.slug}")
+
+        print(state.upper())
+
+        # Sort by created_at descending if available, else by slug
+        state_apps = grouped[state]
+        state_apps.sort(
+            key=lambda a: (a.created_at or "", a.slug),
+            reverse=True,
+        )
+
+        for app in state_apps:
+            created = app.created_at or ""
+            company = app.company or ""
+            role = app.role or ""
+            print(f"  {created:12}  {company:<22} {role}")
+
+        print()
 
 
 def handle_apply_show(args: argparse.Namespace) -> None:
