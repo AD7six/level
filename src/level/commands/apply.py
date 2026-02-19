@@ -5,8 +5,10 @@ Responsible for registering and handling `level apply` subcommands.
 """
 
 import argparse
+from datetime import date, datetime
 
 from level.applications.applications import (
+    Application,
     create_application,
     get_application,
     list_applications,
@@ -22,8 +24,45 @@ from level.config import build_context
 
 def handle_apply_new(args: argparse.Namespace) -> None:
     context = build_context()
-    app = create_application(context, args.slug)
-    print(f"✔ Created application '{app.slug}' in state '{app.state}'")
+
+    company = args.company
+    role = args.role
+
+    interactive = company is None or role is None
+
+    try:
+        while not company:
+            company = input("Company: ").strip()
+    except EOFError:
+        raise SystemExit("Aborted.") from None
+
+    try:
+        while not role:
+            role = input("Role: ").strip()
+    except EOFError:
+        raise SystemExit("Aborted.") from None
+
+    if interactive:
+        default_date = args.date
+        try:
+            date_input = input(
+                f"Application date (YYYY-MM-DD) [{default_date}]: "
+            ).strip()
+        except EOFError:
+            raise SystemExit("Aborted.") from None
+        if date_input:
+            args.date = date_input
+
+    try:
+        validated_date = datetime.strptime(args.date, "%Y-%m-%d").date()
+    except ValueError:
+        raise SystemExit("Invalid date format. Use YYYY-MM-DD.") from None
+
+    app = create_application(context, company, role, validated_date.isoformat())
+    print(f"✔ Created {app.slug}")
+    print(f"  Company: {app.company}")
+    print(f"  Role:    {app.role}")
+    print(f"  State:   {app.state}")
 
 
 def handle_apply_list(args: argparse.Namespace) -> None:
@@ -38,7 +77,7 @@ def handle_apply_list(args: argparse.Namespace) -> None:
         return
 
     # Group by state in canonical order
-    grouped: dict[str, list] = {}
+    grouped: dict[str, list[Application]] = {}
     for app in apps:
         grouped.setdefault(app.state, []).append(app)
 
@@ -103,7 +142,11 @@ def register(
         "new",
         help="Create new application entry",
     )
-    apply_new_parser.add_argument("slug", help="Unique application slug")
+    apply_new_parser.add_argument(
+        "--date", help="Application date", default=date.today().strftime("%Y-%m-%d")
+    )
+    apply_new_parser.add_argument("--company", help="Company name")
+    apply_new_parser.add_argument("--role", help="Role title")
     apply_new_parser.set_defaults(func=handle_apply_new)
 
     # apply list

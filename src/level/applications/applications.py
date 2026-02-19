@@ -98,8 +98,18 @@ def _ensure_structure(context: Context) -> None:
 # ---------------------------------------------------------------------------
 
 
-def create_application(context: Context, slug: str) -> Application:
+def create_application(
+    context: Context, company: str, role: str, date: str
+) -> Application:
     _ensure_structure(context)
+
+    # Normalize company for slug
+    normalized = company.strip().lower().replace(" ", "-")
+    slug = f"{date.replace('-', '')}-{normalized}"
+
+    # Normalize display values
+    company = company.strip().title()
+    role = role.strip().title()
 
     if _application_path(context, slug) is not None:
         raise ValueError(f"Application already exists: {slug}")
@@ -108,9 +118,9 @@ def create_application(context: Context, slug: str) -> Application:
     path.mkdir(parents=True)
 
     meta = {
-        "company": slug,
-        "role": "",
-        "created_at": "",
+        "company": company,
+        "role": role,
+        "created_at": date,
     }
     _write_meta_toml(path / "meta.toml", meta)
     (path / "notes.md").write_text("")
@@ -120,9 +130,9 @@ def create_application(context: Context, slug: str) -> Application:
         slug=slug,
         state="drafts",
         path=path,
-        company=str(meta.get("company", "")),
-        role=str(meta.get("role", "")),
-        created_at=str(meta.get("created_at", "")),
+        company=company,
+        role=role,
+        created_at=date,
     )
 
 
