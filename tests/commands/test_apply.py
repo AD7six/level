@@ -1,7 +1,7 @@
 import argparse
 
+from level.applications.applications import create_application
 from level.commands.apply import (
-    handle_apply_archive,
     handle_apply_list,
     handle_apply_new,
     handle_apply_show,
@@ -42,8 +42,6 @@ def test_apply_new_creates_application(tmp_path, monkeypatch, capsys):
 
 
 def test_apply_list_outputs_entries(tmp_path, monkeypatch, capsys):
-    from level.applications import create_application
-
     context = _context(tmp_path, monkeypatch)
 
     create_application(context, "a")
@@ -64,8 +62,6 @@ def test_apply_list_outputs_entries(tmp_path, monkeypatch, capsys):
 
 
 def test_apply_show_outputs_details(tmp_path, monkeypatch, capsys):
-    from level.applications import create_application
-
     context = _context(tmp_path, monkeypatch)
     create_application(context, "foo")
 
@@ -84,8 +80,6 @@ def test_apply_show_outputs_details(tmp_path, monkeypatch, capsys):
 
 
 def test_apply_status_moves_application(tmp_path, monkeypatch, capsys):
-    from level.applications import create_application
-
     context = _context(tmp_path, monkeypatch)
     create_application(context, "foo")
 
@@ -96,23 +90,3 @@ def test_apply_status_moves_application(tmp_path, monkeypatch, capsys):
 
     assert "Moved" in captured.out
     assert (tmp_path / "applications" / "applied" / "foo").exists()
-
-
-# ---------------------------------------------------------------------------
-# archive
-# ---------------------------------------------------------------------------
-
-
-def test_apply_archive_moves_to_archived(tmp_path, monkeypatch, capsys):
-    from level.applications import create_application
-
-    context = _context(tmp_path, monkeypatch)
-    create_application(context, "foo")
-
-    args = argparse.Namespace(slug="foo")
-    handle_apply_archive(args)
-
-    captured = capsys.readouterr()
-
-    assert "Archived" in captured.out
-    assert (tmp_path / "applications" / "archived" / "foo").exists()

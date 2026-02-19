@@ -6,7 +6,7 @@ Responsible for registering and handling `level apply` subcommands.
 
 import argparse
 
-from level.applications import (
+from level.applications.applications import (
     STATES,
     create_application,
     get_application,

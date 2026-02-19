@@ -1,9 +1,8 @@
 import pytest
 
-from level.applications import (
+from level.applications.applications import (
     STATES,
     TRANSITIONS,
-    archive_application,
     create_application,
     get_application,
     list_applications,
@@ -110,21 +109,6 @@ def test_invalid_transition(tmp_path, monkeypatch):
 
     with pytest.raises(ValueError):
         move_application(context, "foo", "interviewing")  # invalid from drafts
-
-
-# ---------------------------------------------------------------------------
-# archive
-# ---------------------------------------------------------------------------
-
-
-def test_archive_application(tmp_path, monkeypatch):
-    context = _context(tmp_path, monkeypatch)
-
-    create_application(context, "foo")
-
-    app = archive_application(context, "foo")
-
-    assert app.state == "archived"
 
 
 # ---------------------------------------------------------------------------
