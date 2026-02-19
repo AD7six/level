@@ -41,6 +41,25 @@ class Application:
 
 
 # ---------------------------------------------------------------------------
+# Meta Model
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ApplicationMeta:
+    company: str
+    role: str
+    created_at: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "company": self.company,
+            "role": self.role,
+            "created_at": self.created_at,
+        }
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -117,12 +136,12 @@ def create_application(
     path = _state_dir(context, "drafts") / slug
     path.mkdir(parents=True)
 
-    meta = {
-        "company": company,
-        "role": role,
-        "created_at": date,
-    }
-    _write_meta_toml(path / "meta.toml", meta)
+    meta = ApplicationMeta(
+        company=company,
+        role=role,
+        created_at=date,
+    )
+    _write_meta_toml(path / "meta.toml", meta.to_dict())
     (path / "notes.md").write_text("")
     (path / "artifacts").mkdir()
 
@@ -155,14 +174,19 @@ def list_applications(
 
             # Direct application directory (state/slug)
             if (entry / "meta.toml").exists():
-                meta = _load_meta(entry)
+                raw = _load_meta(entry)
+                meta = ApplicationMeta(
+                    company=str(raw.get("company", "")),
+                    role=str(raw.get("role", "")),
+                    created_at=str(raw.get("created_at", "")),
+                )
                 yield Application(
                     slug=entry.name,
                     state=s,
                     path=entry,
-                    company=str(meta.get("company", "")),
-                    role=str(meta.get("role", "")),
-                    created_at=str(meta.get("created_at", "")),
+                    company=meta.company,
+                    role=meta.role,
+                    created_at=meta.created_at,
                 )
                 continue
 
@@ -171,14 +195,19 @@ def list_applications(
                 if not nested.is_dir():
                     continue
                 if (nested / "meta.toml").exists():
-                    meta = _load_meta(nested)
+                    raw = _load_meta(nested)
+                    meta = ApplicationMeta(
+                        company=str(raw.get("company", "")),
+                        role=str(raw.get("role", "")),
+                        created_at=str(raw.get("created_at", "")),
+                    )
                     yield Application(
                         slug=nested.name,
                         state=s,
                         path=nested,
-                        company=str(meta.get("company", "")),
-                        role=str(meta.get("role", "")),
-                        created_at=str(meta.get("created_at", "")),
+                        company=meta.company,
+                        role=meta.role,
+                        created_at=meta.created_at,
                     )
 
 
@@ -188,14 +217,19 @@ def get_application(context: Context, slug: str) -> Application:
         raise ValueError(f"Application not found: {slug}")
 
     state = path.parent.name
-    meta = _load_meta(path)
+    raw = _load_meta(path)
+    meta = ApplicationMeta(
+        company=str(raw.get("company", "")),
+        role=str(raw.get("role", "")),
+        created_at=str(raw.get("created_at", "")),
+    )
     return Application(
         slug=slug,
         state=state,
         path=path,
-        company=str(meta.get("company", "")),
-        role=str(meta.get("role", "")),
-        created_at=str(meta.get("created_at", "")),
+        company=meta.company,
+        role=meta.role,
+        created_at=meta.created_at,
     )
 
 
@@ -211,12 +245,17 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
     new_path = _state_dir(context, new_state) / slug
     app.path.rename(new_path)
 
-    meta = _load_meta(new_path)
+    raw = _load_meta(new_path)
+    meta = ApplicationMeta(
+        company=str(raw.get("company", "")),
+        role=str(raw.get("role", "")),
+        created_at=str(raw.get("created_at", "")),
+    )
     return Application(
         slug=slug,
         state=new_state,
         path=new_path,
-        company=str(meta.get("company", "")),
-        role=str(meta.get("role", "")),
-        created_at=str(meta.get("created_at", "")),
+        company=meta.company,
+        role=meta.role,
+        created_at=meta.created_at,
     )
