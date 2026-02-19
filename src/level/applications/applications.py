@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from level.config import Context, get_data_root
+
 from .schema import STATES
 
 # ---------------------------------------------------------------------------
@@ -50,7 +51,7 @@ class ApplicationMeta:
     created_at: str
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, object]) -> "ApplicationMeta":
+    def from_dict(cls, data: Mapping[str, object]) -> ApplicationMeta:
         return cls(
             company=str(data.get("company", "")),
             role=str(data.get("role", "")),
@@ -302,9 +303,7 @@ def lint_applications(context: Context) -> list[str]:
         state = parts[0]
 
         if state not in STATES:
-            issues.append(
-                f"Application '{rel}' has unknown state: {state}"
-            )
+            issues.append(f"Application '{rel}' has unknown state: {state}")
             continue
 
         raw = _load_meta(app_dir)
@@ -319,7 +318,7 @@ def lint_applications(context: Context) -> list[str]:
             continue
 
         if actual_slug.startswith(expected_slug + "-"):
-            suffix = actual_slug[len(expected_slug) + 1:]
+            suffix = actual_slug[len(expected_slug) + 1 :]
             if suffix.isdigit():
                 continue
 
@@ -361,8 +360,6 @@ def fix_applications(context: Context) -> list[str]:
         target.parent.mkdir(parents=True, exist_ok=True)
         app_dir.rename(target)
 
-        actions.append(
-            f"Moved {rel} → {target.relative_to(root)}"
-        )
+        actions.append(f"Moved {rel} → {target.relative_to(root)}")
 
     return actions

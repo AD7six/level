@@ -10,11 +10,11 @@ from datetime import date, datetime
 from level.applications.applications import (
     Application,
     create_application,
+    fix_applications,
     get_application,
+    lint_applications,
     list_applications,
     move_application,
-    lint_applications,
-    fix_applications,
 )
 from level.applications.schema import STATES, TERMINAL_STATES
 from level.config import build_context
@@ -131,6 +131,7 @@ def handle_apply_timeline(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 # Doctor Handler
 # ---------------------------------------------------------------------------
+
 
 def handle_apply_doctor(args: argparse.Namespace) -> None:
     context = build_context()
