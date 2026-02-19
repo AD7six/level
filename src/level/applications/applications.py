@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from level.config import Context, get_data_root
-
 from .schema import STATES
 
 # ---------------------------------------------------------------------------
@@ -24,11 +23,9 @@ TRANSITIONS: dict[str, set[str]] = {
     "withdrawn": set(),
 }
 
-
 # ---------------------------------------------------------------------------
 # Model
 # ---------------------------------------------------------------------------
-
 
 
 @dataclass(frozen=True)
@@ -69,6 +66,50 @@ class ApplicationMeta:
 
 
 # ---------------------------------------------------------------------------
+# Canonical path helpers
+# ---------------------------------------------------------------------------
+
+
+def _canonical_slug_from_meta(meta: ApplicationMeta) -> str:
+    normalized_company = meta.company.strip().lower().replace(" ", "-")
+    return f"{meta.created_at.replace('-', '')}-{normalized_company}"
+
+
+def _canonical_rel_path(state: str, meta: ApplicationMeta) -> Path:
+    return Path(state) / _canonical_slug_from_meta(meta)
+
+
+def _resolve_target_path(
+    context: Context,
+    state: str,
+    meta: ApplicationMeta,
+    current_path: Path | None = None,
+) -> Path:
+    """
+    Resolve a usable filesystem path for an application.
+
+    - Uses canonical slug
+    - Appends numeric suffix if collision occurs
+    - Ignores collision with current_path (for fix operations)
+    """
+    root = _applications_root(context)
+    base_rel = _canonical_rel_path(state, meta)
+    target = root / base_rel
+
+    if current_path is not None and current_path == target:
+        return target
+
+    final_target = target
+    counter = 1
+
+    while final_target.exists() and final_target != current_path:
+        final_target = target.parent / f"{target.name}-{counter}"
+        counter += 1
+
+    return final_target
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -79,7 +120,6 @@ def _write_meta_toml(path: Path, data: Mapping[str, object]) -> None:
         if value is None:
             continue
         if isinstance(value, str):
-            # Use JSON encoding to safely escape quotes and newlines
             lines.append(f"{key} = {json.dumps(value)}")
         else:
             lines.append(f"{key} = {value}")
@@ -131,25 +171,24 @@ def create_application(
 ) -> Application:
     _ensure_structure(context)
 
-    # Normalize company for slug
-    normalized = company.strip().lower().replace(" ", "-")
-    slug = f"{date.replace('-', '')}-{normalized}"
-
-    # Normalize display values
     company = company.strip().title()
     role = role.strip().title()
-
-    if _application_path(context, slug) is not None:
-        raise ValueError(f"Application already exists: {slug}")
-
-    path = _state_dir(context, "drafts") / slug
-    path.mkdir(parents=True)
 
     meta = ApplicationMeta(
         company=company,
         role=role,
         created_at=date,
     )
+
+    path = _resolve_target_path(context, "drafts", meta)
+    slug = path.name
+
+    if path.exists():
+        raise ValueError(f"Application already exists: {slug}")
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.mkdir(parents=True)
+
     _write_meta_toml(path / "meta.toml", meta.to_dict())
     (path / "notes.md").write_text("")
     (path / "artifacts").mkdir()
@@ -174,14 +213,15 @@ def list_applications(
     for s in states:
         if s not in STATES:
             raise ValueError(f"Invalid state: {s}")
+
         state_dir = root / s
         if not state_dir.exists():
             continue
+
         for entry in sorted(state_dir.iterdir(), key=lambda e: e.name):
             if not entry.is_dir():
                 continue
 
-            # Direct application directory (state/slug)
             if (entry / "meta.toml").exists():
                 raw = _load_meta(entry)
                 meta = ApplicationMeta.from_dict(raw)
@@ -193,23 +233,6 @@ def list_applications(
                     role=meta.role,
                     created_at=meta.created_at,
                 )
-                continue
-
-            # Nested company directory (state/company/slug)
-            for nested in sorted(entry.iterdir(), key=lambda e: e.name):
-                if not nested.is_dir():
-                    continue
-                if (nested / "meta.toml").exists():
-                    raw = _load_meta(nested)
-                    meta = ApplicationMeta.from_dict(raw)
-                    yield Application(
-                        slug=nested.name,
-                        state=s,
-                        path=nested,
-                        company=meta.company,
-                        role=meta.role,
-                        created_at=meta.created_at,
-                    )
 
 
 def get_application(context: Context, slug: str) -> Application:
@@ -220,6 +243,7 @@ def get_application(context: Context, slug: str) -> Application:
     state = path.parent.name
     raw = _load_meta(path)
     meta = ApplicationMeta.from_dict(raw)
+
     return Application(
         slug=slug,
         state=state,
@@ -244,6 +268,7 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
 
     raw = _load_meta(new_path)
     meta = ApplicationMeta.from_dict(raw)
+
     return Application(
         slug=slug,
         state=new_state,
@@ -260,14 +285,6 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
 
 
 def lint_applications(context: Context) -> list[str]:
-    """
-    Return list of structural issues found in applications directory.
-
-    Rules:
-    - Any directory containing meta.toml is considered an application.
-    - The first path segment under applications/ must be a valid state.
-    - Canonical path must be: applications/<state>/<slug>/meta.toml
-    """
     issues: list[str] = []
     root = _applications_root(context)
 
@@ -284,65 +301,68 @@ def lint_applications(context: Context) -> list[str]:
 
         state = parts[0]
 
-        # Unknown state
         if state not in STATES:
             issues.append(
                 f"Application '{rel}' has unknown state: {state}"
             )
             continue
 
-        # Load metadata to compute expected slug
         raw = _load_meta(app_dir)
         meta = ApplicationMeta.from_dict(raw)
 
-        expected_slug = f"{meta.created_at.replace('-', '')}-{meta.company.strip().lower().replace(' ', '-')}"
-        expected_rel = Path(state) / expected_slug
+        expected_rel = _canonical_rel_path(state, meta)
+        expected_slug = expected_rel.name
+        actual_slug = rel.name
 
-        if rel != expected_rel:
-            issues.append(
-                f"Application '{rel}' is not in canonical location '{expected_rel}'"
-            )
+        # Allow numeric suffixes for collision resolution
+        if actual_slug == expected_slug:
+            continue
+
+        if actual_slug.startswith(expected_slug + "-"):
+            suffix = actual_slug[len(expected_slug) + 1:]
+            if suffix.isdigit():
+                continue
+
+        issues.append(
+            f"Application '{rel}' is not in canonical location '{expected_rel}'"
+        )
 
     return issues
 
 
 def fix_applications(context: Context) -> list[str]:
-    """
-    Attempt to flatten nested application directories.
-    """
     actions: list[str] = []
     root = _applications_root(context)
 
-    for state in STATES:
-        state_dir = root / state
-        if not state_dir.exists():
+    if not root.exists():
+        return actions
+
+    for meta_file in root.rglob("meta.toml"):
+        app_dir = meta_file.parent
+        rel = app_dir.relative_to(root)
+        parts = rel.parts
+
+        if not parts:
             continue
 
-        for entry in list(state_dir.iterdir()):
-            if not entry.is_dir():
-                continue
+        state = parts[0]
 
-            if (entry / "meta.toml").exists():
-                continue
+        if state not in STATES:
+            continue
 
-            # Flatten state/company/slug → state/slug
-            for nested in entry.iterdir():
-                if not nested.is_dir():
-                    continue
-                if not (nested / "meta.toml").exists():
-                    continue
+        raw = _load_meta(app_dir)
+        meta = ApplicationMeta.from_dict(raw)
 
-                target = state_dir / nested.name
-                if target.exists():
-                    raise ValueError(f"Slug collision during fix: {nested.name}")
+        target = _resolve_target_path(context, state, meta, current_path=app_dir)
 
-                nested.rename(target)
-                actions.append(f"Moved {nested} → {target}")
+        if app_dir == target:
+            continue
 
-            # Remove empty company folder
-            try:
-                entry.rmdir()
-            except OSError:
-                pass
+        target.parent.mkdir(parents=True, exist_ok=True)
+        app_dir.rename(target)
+
+        actions.append(
+            f"Moved {rel} → {target.relative_to(root)}"
+        )
 
     return actions
