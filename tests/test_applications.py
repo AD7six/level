@@ -41,10 +41,12 @@ def test_create_application_creates_structure(tmp_path, monkeypatch):
 def test_create_application_duplicate_slug(tmp_path, monkeypatch):
     context = _context(tmp_path, monkeypatch)
 
-    create_application(context, "Dup", "Role", "2026-01-01")
+    first = create_application(context, "Dup", "Role", "2026-01-01")
+    second = create_application(context, "Dup", "Role", "2026-01-01")
 
-    with pytest.raises(ValueError):
-        create_application(context, "Dup", "Role", "2026-01-01")
+    assert first.slug == "20260101-dup"
+    assert second.slug == "20260101-dup-1"
+    assert second.path.exists()
 
 
 # ---------------------------------------------------------------------------

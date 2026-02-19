@@ -264,16 +264,23 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
     if new_state not in TRANSITIONS[app.state]:
         raise ValueError(f"Invalid transition: {app.state} → {new_state}")
 
-    new_path = _state_dir(context, new_state) / slug
-    app.path.rename(new_path)
-
-    raw = _load_meta(new_path)
+    raw = _load_meta(app.path)
     meta = ApplicationMeta.from_dict(raw)
 
+    target = _resolve_target_path(
+        context,
+        new_state,
+        meta,
+        current_path=app.path,
+    )
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    app.path.rename(target)
+
     return Application(
-        slug=slug,
+        slug=target.name,
         state=new_state,
-        path=new_path,
+        path=target,
         company=meta.company,
         role=meta.role,
         created_at=meta.created_at,

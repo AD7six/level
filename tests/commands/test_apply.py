@@ -5,7 +5,7 @@ from level.commands.apply import (
     handle_apply_list,
     handle_apply_new,
     handle_apply_show,
-    handle_apply_status,
+    handle_apply_move,
 )
 from level.config import build_context
 
@@ -77,16 +77,16 @@ def test_apply_show_outputs_details(tmp_path, monkeypatch, capsys):
 
 
 # ---------------------------------------------------------------------------
-# status
+# move
 # ---------------------------------------------------------------------------
 
 
-def test_apply_status_moves_application(tmp_path, monkeypatch, capsys):
+def test_apply_move_moves_application(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path, monkeypatch)
     create_application(context, "Foo", "Role", "2026-01-01")
 
     args = argparse.Namespace(slug="20260101-foo", state="applied")
-    handle_apply_status(args)
+    handle_apply_move(args)
 
     captured = capsys.readouterr()
 
