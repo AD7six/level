@@ -106,9 +106,13 @@ def handle_apply_list(args: argparse.Namespace) -> None:
 def handle_apply_show(args: argparse.Namespace) -> None:
     context = build_context()
     app = get_application(context, args.slug)
-    print(f"Slug:  {app.slug}")
-    print(f"State: {app.state}")
-    print(f"Path:  {app.path}")
+
+    print(f"Slug:       {app.slug}")
+    print(f"State:      {app.state}")
+    print(f"Company:    {app.company}")
+    print(f"Role:       {app.role}")
+    print(f"Created At: {app.created_at}")
+    print(f"Path:       {app.path}")
 
 
 def handle_apply_status(args: argparse.Namespace) -> None:
