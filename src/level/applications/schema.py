@@ -23,7 +23,7 @@ CURRENT_SCHEMA_VERSION: Final[int] = 1
 
 LAYOUT: Final[str] = "state-first"
 
-STATES: Final[set[str]] = {
+STATES: Final[list[str]] = [
     "drafts",
     "applied",
     "interviewing",
@@ -31,7 +31,7 @@ STATES: Final[set[str]] = {
     "stalled",
     "rejected",
     "withdrawn",
-}
+]
 
 TERMINAL_STATES: Final[set[str]] = {
     "rejected",
@@ -85,8 +85,7 @@ def validate_schema(data: dict[str, object]) -> None:
     ):
         raise ValueError("Invalid applications schema states definition.")
 
-    states = set(raw_states)
-    if states != STATES:
+    if raw_states != STATES:
         raise ValueError("Applications schema states mismatch.")
 
     raw_terminal = data.get("terminal_states")

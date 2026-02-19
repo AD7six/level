@@ -7,12 +7,12 @@ Responsible for registering and handling `level apply` subcommands.
 import argparse
 
 from level.applications.applications import (
-    STATES,
     create_application,
     get_application,
     list_applications,
     move_application,
 )
+from level.applications.schema import STATES, TERMINAL_STATES
 from level.config import build_context
 
 # ---------------------------------------------------------------------------
@@ -31,6 +31,8 @@ def handle_apply_list(args: argparse.Namespace) -> None:
     apps = list_applications(context, state=args.state)
 
     for app in apps:
+        if not getattr(args, "all", False) and app.state in TERMINAL_STATES:
+            continue
         print(f"{app.state:14} {app.slug}")
 
 
@@ -85,6 +87,11 @@ def register(
         "--state",
         choices=sorted(STATES),
         help="Filter by state",
+    )
+    apply_list_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Include terminal states",
     )
     apply_list_parser.set_defaults(func=handle_apply_list)
 

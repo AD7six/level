@@ -1,13 +1,13 @@
 import pytest
 
 from level.applications.applications import (
-    STATES,
     TRANSITIONS,
     create_application,
     get_application,
     list_applications,
     move_application,
 )
+from level.applications.schema import STATES
 from level.config import build_context
 
 # ---------------------------------------------------------------------------
@@ -118,8 +118,8 @@ def test_invalid_transition(tmp_path, monkeypatch):
 
 def test_states_and_transitions_consistency():
     # All transition keys must be valid states
-    assert set(TRANSITIONS.keys()) == STATES
+    assert set(TRANSITIONS.keys()) == set(STATES)
 
     # All transition targets must be valid states
     for targets in TRANSITIONS.values():
-        assert targets.issubset(STATES)
+        assert targets.issubset(set(STATES))
