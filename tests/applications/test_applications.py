@@ -3,11 +3,11 @@ import pytest
 from level.applications.applications import (
     TRANSITIONS,
     create_application,
+    fix_applications,
     get_application,
+    lint_applications,
     list_applications,
     move_application,
-    lint_applications,
-    fix_applications,
 )
 from level.applications.schema import STATES
 from level.config import build_context
@@ -152,8 +152,8 @@ def test_lint_detects_non_canonical_path(tmp_path, monkeypatch):
 def test_lint_allows_numeric_suffix(tmp_path, monkeypatch):
     context = _context(tmp_path, monkeypatch)
 
-    first = create_application(context, "Dup", "Role", "2026-01-01")
-    second = create_application(context, "Dup", "Role", "2026-01-01")
+    create_application(context, "Dup", "Role", "2026-01-01")
+    create_application(context, "Dup", "Role", "2026-01-01")
 
     # second has -1 suffix
     issues = lint_applications(context)
@@ -187,18 +187,13 @@ def test_fix_adds_numeric_suffix_on_collision(tmp_path, monkeypatch):
 
     # Create a non-canonical directory that should canonicalize
     # to the same slug as the existing application
-    conflict = (
-        tmp_path
-        / "applications"
-        / "drafts"
-        / "wrong-slug"
-    )
+    conflict = tmp_path / "applications" / "drafts" / "wrong-slug"
     conflict.mkdir(parents=True)
     (conflict / "meta.toml").write_text(
         'company = "Dup"\nrole = "Role"\ncreated_at = "2026-01-01"\n'
     )
 
-    actions = fix_applications(context)
+    fix_applications(context)
 
     # Should create a suffixed directory
     suffixed = tmp_path / "applications" / "drafts" / "20260101-dup-1"
@@ -210,7 +205,7 @@ def test_fix_is_idempotent(tmp_path, monkeypatch):
 
     create_application(context, "Acme", "Role", "2026-01-01")
 
-    first = fix_applications(context)
+    fix_applications(context)
     second = fix_applications(context)
 
     # Second run should do nothing

@@ -3,9 +3,9 @@ import argparse
 from level.applications.applications import create_application
 from level.commands.apply import (
     handle_apply_list,
+    handle_apply_move,
     handle_apply_new,
     handle_apply_show,
-    handle_apply_move,
 )
 from level.config import build_context
 

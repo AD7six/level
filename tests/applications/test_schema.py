@@ -1,7 +1,4 @@
-import pytest
-
 from level.applications.schema import STATES
-
 
 # ---------------------------------------------------------------------------
 # basic schema integrity
