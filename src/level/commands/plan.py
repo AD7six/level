@@ -1,16 +1,16 @@
 import argparse
 import subprocess
 from typing import Any
+from dataclasses import fields
 
 from level.config import build_context, get_data_root
 from level.plan.plan import (
+    Plan,
+    fix_plan,
+    lint_plan,
     load_plan,
     save_plan,
-    lint_plan,
-    fix_plan,
-    Plan,
 )
-
 
 # ---------------------------------------------------------------------------
 # Handlers
@@ -27,30 +27,15 @@ def handle_plan_show(args: argparse.Namespace) -> None:
 
     print("Career Plan")
     print("-----------")
-    print(f"Target Roles: {', '.join(plan.target_roles) if plan.target_roles else '—'}")
-    print(f"Comp Range: {plan.target_total_comp_min} - {plan.target_total_comp_max}")
-    print(f"Horizon (years): {plan.horizon_years}")
-    print(f"Primary Focus: {plan.primary_focus}")
-    print(f"Last Reviewed: {plan.last_reviewed}")
 
+    for k, v in plan.as_display_dict().items():
+        print(f"{k}: {v}")
 
 def handle_plan_edit(args: argparse.Namespace) -> None:
     context = build_context()
 
-    # Ensure plan exists
-    plan = load_plan(context)
-    if plan is None:
-        save_plan(
-            context,
-            Plan(
-                target_roles=[],
-                target_total_comp_min=None,
-                target_total_comp_max=None,
-                horizon_years=None,
-                primary_focus=None,
-                last_reviewed=None,
-            ),
-        )
+    # Ensure plan directory and canonical structure exist
+    fix_plan(context)
 
     data_root = get_data_root(context)
     meta_path = data_root / "plan" / "meta.toml"
@@ -69,6 +54,31 @@ def handle_plan_goals(args: argparse.Namespace) -> None:
 
 def handle_plan_review(args: argparse.Namespace) -> None:
     print("Review workflow not yet implemented.")
+
+
+def handle_plan_doctor(args: argparse.Namespace) -> None:
+    context = build_context()
+
+    if args.fix:
+        actions = fix_plan(context)
+        if not actions:
+            print("No changes required.")
+            return
+
+        print("Actions performed:")
+        for action in actions:
+            print(f"  - {action}")
+        return
+
+    issues = lint_plan(context)
+
+    if not issues:
+        print("No issues detected.")
+        return
+
+    print("Issues detected:")
+    for issue in issues:
+        print(f"  - {issue}")
 
 
 # ---------------------------------------------------------------------------
@@ -118,3 +128,15 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
         help="Quarterly / periodic review",
     )
     plan_review_parser.set_defaults(func=handle_plan_review)
+
+    # plan doctor
+    plan_doctor_parser = plan_subparsers.add_parser(
+        "doctor",
+        help="Validate and optionally repair plan structure",
+    )
+    plan_doctor_parser.add_argument(
+        "--fix",
+        action="store_true",
+        help="Automatically fix detected issues",
+    )
+    plan_doctor_parser.set_defaults(func=handle_plan_doctor)
