@@ -1,5 +1,16 @@
 import argparse
+import subprocess
 from typing import Any
+
+from level.config import build_context, get_data_root
+from level.plan.plan import (
+    load_plan,
+    save_plan,
+    lint_plan,
+    fix_plan,
+    Plan,
+)
+
 
 # ---------------------------------------------------------------------------
 # Handlers
@@ -7,23 +18,57 @@ from typing import Any
 
 
 def handle_plan_show(args: argparse.Namespace) -> None:
-    print("[level] Current career plan (not yet implemented)")
+    context = build_context()
+    plan = load_plan(context)
+
+    if plan is None:
+        print("No plan defined.")
+        return
+
+    print("Career Plan")
+    print("-----------")
+    print(f"Target Roles: {', '.join(plan.target_roles) if plan.target_roles else '—'}")
+    print(f"Comp Range: {plan.target_total_comp_min} - {plan.target_total_comp_max}")
+    print(f"Horizon (years): {plan.horizon_years}")
+    print(f"Primary Focus: {plan.primary_focus}")
+    print(f"Last Reviewed: {plan.last_reviewed}")
 
 
 def handle_plan_edit(args: argparse.Namespace) -> None:
-    print("[level] Editing career plan (not yet implemented)")
+    context = build_context()
+
+    # Ensure plan exists
+    plan = load_plan(context)
+    if plan is None:
+        save_plan(
+            context,
+            Plan(
+                target_roles=[],
+                target_total_comp_min=None,
+                target_total_comp_max=None,
+                horizon_years=None,
+                primary_focus=None,
+                last_reviewed=None,
+            ),
+        )
+
+    data_root = get_data_root(context)
+    meta_path = data_root / "plan" / "meta.toml"
+    editor = context.config.editor or "vi"
+
+    subprocess.run([editor, str(meta_path)])
 
 
 def handle_plan_gap(args: argparse.Namespace) -> None:
-    print("[level] Showing skill gap analysis (not yet implemented)")
+    print("Skill gap analysis not yet implemented.")
 
 
 def handle_plan_goals(args: argparse.Namespace) -> None:
-    print("[level] Listing defined goals (not yet implemented)")
+    print("Goal listing not yet implemented.")
 
 
 def handle_plan_review(args: argparse.Namespace) -> None:
-    print("[level] Running quarterly / periodic review (not yet implemented)")
+    print("Review workflow not yet implemented.")
 
 
 # ---------------------------------------------------------------------------
