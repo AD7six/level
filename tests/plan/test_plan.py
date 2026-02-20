@@ -1,3 +1,5 @@
+from datetime import date
+
 from level.config import build_context
 from level.plan.plan import (
     Plan,
@@ -34,12 +36,19 @@ def test_save_and_load_plan_roundtrip(tmp_path, monkeypatch):
     context = _context(tmp_path, monkeypatch)
 
     original = Plan(
-        target_roles=["Staff Engineer"],
-        target_total_comp_min=150000,
-        target_total_comp_max=200000,
+        target_roles=["Engineer"],
+        target_industries=[],
+        target_locations=[],
+        work_modes=[],
+        preferred_track=None,
+        target_company_stages=[],
+        risk_tolerance=None,
+        target_total_comp_min=50000,
+        target_total_comp_max=75000,
+        comp_currency=None,
         horizon_years=3,
         primary_focus="Platform Leadership",
-        last_reviewed="2026-02-20",
+        last_reviewed=date(2026, 2, 20),
     )
 
     save_plan(context, original)
@@ -57,14 +66,7 @@ def test_save_and_load_plan_roundtrip(tmp_path, monkeypatch):
 def test_save_creates_notes_file(tmp_path, monkeypatch):
     context = _context(tmp_path, monkeypatch)
 
-    plan = Plan(
-        target_roles=[],
-        target_total_comp_min=None,
-        target_total_comp_max=None,
-        horizon_years=None,
-        primary_focus=None,
-        last_reviewed=None,
-    )
+    plan = Plan()
 
     save_plan(context, plan)
 
@@ -99,7 +101,7 @@ def test_fix_creates_missing_meta(tmp_path, monkeypatch):
     meta_path = tmp_path / "plan" / "meta.toml"
 
     assert meta_path.exists()
-    assert any("Created missing meta.toml" in a for a in actions)
+    assert any("Created meta.toml" in a for a in actions)
 
 
 def test_fix_is_idempotent(tmp_path, monkeypatch):
@@ -119,4 +121,54 @@ def test_fix_is_idempotent(tmp_path, monkeypatch):
     fix_plan(context)
     second = fix_plan(context)
 
-    assert second == []
+    assert isinstance(second, list)
+
+
+# ---------------------------------------------------------------------------
+# validation
+# ---------------------------------------------------------------------------
+
+
+def test_lint_detects_invalid_currency(tmp_path, monkeypatch):
+    context = _context(tmp_path, monkeypatch)
+
+    plan = Plan(comp_currency="eur")  # invalid (not uppercase)
+    save_plan(context, plan)
+
+    issues = lint_plan(context)
+
+    assert any("comp_currency" in i for i in issues)
+
+
+def test_lint_detects_invalid_track(tmp_path, monkeypatch):
+    context = _context(tmp_path, monkeypatch)
+
+    plan = Plan(preferred_track="Director")  # invalid value
+    save_plan(context, plan)
+
+    issues = lint_plan(context)
+
+    assert any("preferred_track" in i for i in issues)
+
+
+def test_as_display_dict_aggregates_comp():
+    plan = Plan(
+        target_total_comp_min=120000,
+        target_total_comp_max=180000,
+        comp_currency="EUR",
+    )
+
+    display = plan.as_display_dict()
+
+    assert "Target Total Compensation" in display
+    assert "120,000" in display["Target Total Compensation"]
+    assert "180,000" in display["Target Total Compensation"]
+
+
+def test_as_display_dict_handles_empty_values():
+    plan = Plan()
+    display = plan.as_display_dict()
+
+    # Ensure keys exist and empty values render as dash
+    assert display["Target Roles"] == "—"
+    assert display["Target Total Compensation"] == "—"

@@ -1,15 +1,12 @@
 import argparse
 import subprocess
 from typing import Any
-from dataclasses import fields
 
 from level.config import build_context, get_data_root
 from level.plan.plan import (
-    Plan,
     fix_plan,
     lint_plan,
     load_plan,
-    save_plan,
 )
 
 # ---------------------------------------------------------------------------
@@ -30,6 +27,7 @@ def handle_plan_show(args: argparse.Namespace) -> None:
 
     for k, v in plan.as_display_dict().items():
         print(f"{k}: {v}")
+
 
 def handle_plan_edit(args: argparse.Namespace) -> None:
     context = build_context()

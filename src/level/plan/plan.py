@@ -71,36 +71,53 @@ class Plan:
         metadata={"comment": "Date the plan was last formally reviewed"},
     )
 
-
     def as_display_dict(self) -> dict[str, str]:
         result: dict[str, str] = {}
 
         # Roles & positioning
-        result["Target Roles"] = ", ".join(self.target_roles) if self.target_roles else "—"
-        result["Target Industries"] = ", ".join(self.target_industries) if self.target_industries else "—"
-        result["Target Locations"] = ", ".join(self.target_locations) if self.target_locations else "—"
+        result["Target Roles"] = (
+            ", ".join(self.target_roles) if self.target_roles else "—"
+        )
+        result["Target Industries"] = (
+            ", ".join(self.target_industries) if self.target_industries else "—"
+        )
+        result["Target Locations"] = (
+            ", ".join(self.target_locations) if self.target_locations else "—"
+        )
         result["Work Modes"] = ", ".join(self.work_modes) if self.work_modes else "—"
 
         result["Preferred Track"] = self.preferred_track or "—"
-        result["Company Stages"] = ", ".join(self.target_company_stages) if self.target_company_stages else "—"
+        result["Company Stages"] = (
+            ", ".join(self.target_company_stages) if self.target_company_stages else "—"
+        )
         result["Risk Tolerance"] = self.risk_tolerance or "—"
 
         # Compensation (aggregate)
         if self.target_total_comp_min or self.target_total_comp_max:
             currency = self.comp_currency or ""
             min_tc = (
-                f"{self.target_total_comp_min:,}" if self.target_total_comp_min is not None else "?"
+                f"{self.target_total_comp_min:,}"
+                if self.target_total_comp_min is not None
+                else "?"
             )
             max_tc = (
-                f"{self.target_total_comp_max:,}" if self.target_total_comp_max is not None else "?"
+                f"{self.target_total_comp_max:,}"
+                if self.target_total_comp_max is not None
+                else "?"
             )
-            result["Target Total Compensation"] = f"{currency} {min_tc} - {max_tc}".strip()
+            result["Target Total Compensation"] = (
+                f"{currency} {min_tc} - {max_tc}".strip()
+            )
         else:
             result["Target Total Compensation"] = "—"
 
-        result["Horizon (Years)"] = str(self.horizon_years) if self.horizon_years else "—"
+        result["Horizon (Years)"] = (
+            str(self.horizon_years) if self.horizon_years else "—"
+        )
         result["Primary Focus"] = self.primary_focus or "—"
-        result["Last Reviewed"] = self.last_reviewed.isoformat() if self.last_reviewed else "—"
+        result["Last Reviewed"] = (
+            self.last_reviewed.isoformat() if self.last_reviewed else "—"
+        )
 
         return result
 
@@ -175,7 +192,7 @@ def load_plan(context: Context) -> Plan | None:
             return value
         if isinstance(value, str) and value.isdigit():
             return int(value)
-        return value  # let lint catch invalid types
+        return None
 
     def _get_str(key: str) -> str | None:
         value = raw.get(key)
@@ -265,10 +282,14 @@ def lint_plan(context: Context) -> list[str]:
             issues.append(f"{name} must be a list of strings")
 
     # Validate numeric fields
-    if plan.target_total_comp_min is not None and not isinstance(plan.target_total_comp_min, int):
+    if plan.target_total_comp_min is not None and not isinstance(
+        plan.target_total_comp_min, int
+    ):
         issues.append("target_total_comp_min must be an integer")
 
-    if plan.target_total_comp_max is not None and not isinstance(plan.target_total_comp_max, int):
+    if plan.target_total_comp_max is not None and not isinstance(
+        plan.target_total_comp_max, int
+    ):
         issues.append("target_total_comp_max must be an integer")
 
     if plan.horizon_years is not None and not isinstance(plan.horizon_years, int):
@@ -276,7 +297,11 @@ def lint_plan(context: Context) -> list[str]:
 
     # Validate currency
     if plan.comp_currency:
-        if not isinstance(plan.comp_currency, str) or len(plan.comp_currency) != 3 or not plan.comp_currency.isupper():
+        if (
+            not isinstance(plan.comp_currency, str)
+            or len(plan.comp_currency) != 3
+            or not plan.comp_currency.isupper()
+        ):
             issues.append("comp_currency must be a 3-letter uppercase currency code")
 
     # Validate preferred_track
