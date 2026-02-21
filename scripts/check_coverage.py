@@ -29,7 +29,7 @@ def load_percent(path: Path) -> tuple[bool, float, str | None]:
 
 
 def check_coverage(
-    current_file: str = ".coverage.json",
+    current_file: str = "coverage.json",
     comparison_file: str = ".coverage_baseline.json",
     strict: bool = True,
 ) -> int:

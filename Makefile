@@ -31,7 +31,7 @@ test: ## Run unit tests
 
 .PHONY: coverage
 coverage: ## Run tests with coverage and ensure it does not decrease
-	@$(PYTHON) -m pytest --cov=src --cov-report=term --cov-report=json:.coverage.json
+	@$(PYTHON) -m pytest --cov=src --cov-report=term --cov-report=json:coverage.json
 	@$(PYTHON) scripts/check_coverage.py
 
 .PHONY: ci
