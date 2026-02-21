@@ -83,17 +83,21 @@ jobs:
           name: coverage-main
           path: coverage.json
 
-      - name: Download main coverage artifact
-        if: github.event_name == 'pull_request'
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          workflow: CI
-          branch: main
-          name: coverage-main
-          path: main-coverage
+      - name: Fetch main branch
+        run: |
+          git fetch origin main
+          git worktree add ../main-worktree origin/main
+
+      - name: Install dependencies (main)
+        working-directory: ../main-worktree
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Run tests on main (coverage only)
+        working-directory: ../main-worktree
+        run: pytest --cov=src --cov-report=json:coverage_main.json
 
       - name: Compare coverage with main
-        if: github.event_name == 'pull_request'
         run: |
-          python scripts/check_coverage.py \
-            --compare coverage.json main-coverage/coverage.json
+          python scripts/check_coverage.py --compare coverage.json ../main-worktree/coverage_main.json
