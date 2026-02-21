@@ -76,6 +76,13 @@ jobs:
           PYTHONWARNINGS: error
         run: pytest --cov=src --cov-report=term-missing --cov-report=json:coverage.json
 
+      - name: Upload coverage (main only)
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-main
+          path: coverage.json
+
       - name: Fetch main branch
         run: |
           git fetch origin main
