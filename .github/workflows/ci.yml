@@ -87,7 +87,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: CI
+          workflow: ci.yml
           branch: main
           name: coverage-main
           path: main-coverage
