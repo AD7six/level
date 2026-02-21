@@ -74,14 +74,14 @@ jobs:
       - name: Run tests
         env:
           PYTHONWARNINGS: error
-        run: pytest --cov=src --cov-report=term-missing --cov-report=json:coverage.json
+        run: pytest --cov=src --cov-report=term-missing --cov-report=json:.coverage.json
 
       - name: Upload coverage (main only)
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-main
-          path: coverage.json
+          path: .coverage.json
 
       - name: Download main coverage artifact
         if: github.event_name == 'pull_request'
@@ -96,4 +96,4 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           python scripts/check_coverage.py \
-            --compare coverage.json main-coverage/coverage.json
+            --compare .coverage.json main-coverage/coverage.json
