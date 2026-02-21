@@ -93,27 +93,4 @@ jobs:
 
       - name: Compare coverage with main
         run: |
-          python - <<'EOF'
-          import json
-          import sys
-
-          with open("coverage.json") as f:
-              pr = json.load(f)
-
-          with open("../main-worktree/coverage_main.json") as f:
-              main = json.load(f)
-
-          pr_cov = pr["totals"]["percent_covered"]
-          main_cov = main["totals"]["percent_covered"]
-
-          pr_bp = int(round(pr_cov * 100))
-          main_bp = int(round(main_cov * 100))
-
-          print(f"PR coverage: {pr_bp/100:.2f}%")
-          print(f"Main coverage: {main_bp/100:.2f}%")
-
-          if pr_bp < main_bp:
-              print("Coverage decreased compared to main")
-              sys.exit(1)
-          print("Coverage OK (not lower than main)")
-          EOF
+          python scripts/check_coverage.py --compare coverage.json ../main-worktree/coverage_main.json
