@@ -66,7 +66,7 @@ Goal: ensure all domains follow canonical filesystem + metadata contract.
 - `resume new/list/build`
 - Template layering
 - Deterministic rendering
-- Version tracking per application
+- Resume snapshot metadata (source name + canonical version hash)
 - Resume ↔ application linkage
 - Canonical resume version storage
 - Doctor validation of template structure
@@ -83,6 +83,8 @@ Goal: deterministic artifact generation tied to applications.
 - Longitudinal metrics
 - Domain-agnostic metrics engine
 - Query/filter layer for applications and practice
+- Resume diff tooling (application vs canonical)
+- Backport workflow exploration (merge improvements into canonical resumes)
 
 Goal: cohesive system-level visibility across domains.
 
