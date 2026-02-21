@@ -15,21 +15,25 @@ def main() -> int:
     data = json.loads(coverage_file.read_text())
     current = float(data["totals"]["percent_covered"])
 
-    # Account for rounding when comparing floats. We're storing to 2 decimal
-    # places, so current could be up to 0.005% lower than baseline without
-    # actually decreasing coverage.
-    EPSILON = 0.005  # 0.005% tolerance
+    # Convert to integer basis points (2 decimal places)
+    current_bp = int(round(current * 100))
 
     if baseline_file.exists():
         baseline = float(baseline_file.read_text().strip())
-        if (current + EPSILON) < baseline:
-            print(f"Coverage decreased: {current:.2f}% < {baseline:.2f}%")
-            return 1
-        print(f"Coverage OK: {current:.2f}% (baseline {baseline:.2f}%)")
-    else:
-        print(f"No baseline found. Setting baseline to {current:.2f}%")
+        baseline_bp = int(round(baseline * 100))
 
-    baseline_file.write_text(f"{current:.2f}")
+        if current_bp < baseline_bp:
+            print(f"Coverage decreased: {current_bp/100:.2f}% < {baseline_bp/100:.2f}%")
+            return 1
+
+        print(
+            f"Coverage OK: {current_bp/100:.2f}% " f"(baseline {baseline_bp/100:.2f}%)"
+        )
+    else:
+        print(f"No baseline found. Setting baseline to {current_bp/100:.2f}%")
+
+    # Store baseline at 2 decimal precision
+    baseline_file.write_text(f"{current_bp/100:.2f}")
     return 0
 
 
