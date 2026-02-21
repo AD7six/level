@@ -29,6 +29,17 @@ typecheck: ## Run mypy
 test: ## Run unit tests
 	$(PYTHON) -m pytest
 
+.PHONY: coverage
+coverage: ## Run tests with coverage and ensure it does not decrease
+	@$(PYTHON) -m pytest --cov=src --cov-report=term --cov-report=json:coverage.json
+	@$(PYTHON) scripts/check_coverage.py
+
+.PHONY: ci
+ci: lint typecheck coverage ## Run CI validation locally
+
+.PHONY: ready
+ready: fmt typecheck test ## Prepare to commit - Format, typecheck, and run tests
+
 .PHONY: clean
 clean: ## Remove venv and artifacts
 	rm -rf $(VENV) .pytest_cache .mypy_cache build dist *.egg-info
