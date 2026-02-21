@@ -1,0 +1,54 @@
+"""
+{{TITLE}}
+
+Description:
+- Briefly describe the problem here.
+
+Constraints:
+- Add constraints here.
+
+Examples:
+- Input:
+- Output:
+"""
+
+import time
+import sys
+from pathlib import Path
+
+# Dynamically locate project root (directory containing 'scripts')
+current = Path(__file__).resolve()
+for parent in current.parents:
+    if (parent / "scripts").exists():
+        sys.path.insert(0, str(parent))
+        break
+
+from scripts.test_harness import run_tests
+
+def solve(*args):
+    """
+    Implement your solution here.
+
+    Args:
+        Define parameters clearly.
+
+    Returns:
+        Expected return value.
+    """
+    raise NotImplementedError("Implement the solution")
+
+
+def main():
+    test_cases = [
+        # (input_args_tuple, expected_output, message)
+        # ((...), ..., "Simplest example"),
+        # ((...), ..., "Simple example"),
+        # ((...), ..., "More complex example"),
+        # ((...), ..., "Very complex example"),
+        # ((...), ..., "etc. covering all edge cases"),
+        (([]), [], "Empty input so tests fail until you implement the solution"),
+    ]
+    run_tests(solve, test_cases)
+
+if __name__ == "__main__":
+    main()
