@@ -7,6 +7,7 @@ from pathlib import Path
 
 TOLERANCE = 0.01  # 1% tolerance for coverage decrease
 
+
 def load_percent(path: Path) -> tuple[bool, float, str | None]:
     if not path.exists():
         return False, 0.0, f"{path} not found"
@@ -65,7 +66,7 @@ def check_coverage(
         print(
             f"Coverage decreased by {delta/100:.2f}%: "
             f"{current_cov/100:.2f}% (current) < {comparison_cov/100:.2f}% (baseline)"
-        ) 
+        )
         return 1
     elif delta > 0:
         print(
