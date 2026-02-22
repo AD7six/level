@@ -13,6 +13,7 @@ from typing import Any, cast
 
 import level.commands
 from level import __version__
+from level.logging import configure_logging
 
 # ---------------------------------------------------------------------------
 # Registration Helpers
@@ -49,6 +50,15 @@ def build_parser(prog_name: str | None = None) -> argparse.ArgumentParser:
         version=f"%(prog)s {__version__}",
     )
 
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        "--debug",
+        dest="debug",
+        action="store_true",
+        help="Enable debug logging.",
+    )
+
     subparsers: argparse._SubParsersAction[Any] = parser.add_subparsers(dest="command")
 
     # Load all commands in the command folder
@@ -80,7 +90,25 @@ def build_parser(prog_name: str | None = None) -> argparse.ArgumentParser:
 
 def main() -> None:
     parser = build_parser()
-    args = parser.parse_args()
+
+    # Pre-parse only global flags (without triggering subparser parsing) so
+    # flags like --debug are position independent.
+    global_parser = argparse.ArgumentParser(add_help=False)
+    global_parser.add_argument(
+        "-v",
+        "--verbose",
+        "--debug",
+        dest="debug",
+        action="store_true",
+    )
+
+    global_args, remaining = global_parser.parse_known_args()
+
+    # Configure logging early
+    configure_logging(debug=getattr(global_args, "debug", False))
+
+    # Now parse full CLI with remaining args
+    args = parser.parse_args(remaining)
 
     if not hasattr(args, "func"):
         parser.print_help()
