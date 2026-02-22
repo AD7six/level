@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from level.config import Context, get_data_root
+from level.templates.renderer import render_template_directory
 
 from .schema import STATES
 
@@ -168,7 +169,11 @@ def _ensure_structure(context: Context) -> None:
 
 
 def create_application(
-    context: Context, company: str, role: str, date: str
+    context: Context,
+    company: str,
+    role: str,
+    date: str,
+    resume_template: str = "base",
 ) -> Application:
     _ensure_structure(context)
 
@@ -191,8 +196,35 @@ def create_application(
     path.mkdir(parents=True)
 
     _write_meta_toml(path / "meta.toml", meta.to_dict())
-    (path / "notes.md").write_text("")
-    (path / "artifacts").mkdir()
+
+    # Render application templates
+    context_data = {
+        "company": company,
+        "role": role,
+        "date": date,
+        "state": "drafts",
+        "slug": slug,
+    }
+
+    render_template_directory(
+        context=context,
+        template_subdir="application",
+        variables=context_data,
+        output_dir=path,
+    )
+
+    # Render single resume template (one resume per application)
+    from level.templates.renderer import render_template_to_path
+
+    resume_output = path / "resume.md"
+
+    render_template_to_path(
+        context=context,
+        template_name=f"resume/{resume_template}.md.tmpl",
+        variables=context_data,
+        output_path=resume_output,
+        strict=False,
+    )
 
     return Application(
         slug=slug,

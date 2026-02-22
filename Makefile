@@ -32,7 +32,7 @@ test: ## Run unit tests
 .PHONY: coverage
 coverage: ## Run tests with coverage and ensure it does not decrease
 	@$(PYTHON) -m pytest --cov=src --cov-report=term --cov-report=json:.coverage.json
-	@$(PYTHON) scripts/check_coverage.py
+	@$(PYTHON) scripts/check_coverage.py $(if $(UPDATE),--update,)
 
 .PHONY: ci
 ci: lint typecheck coverage ## Run CI validation locally
