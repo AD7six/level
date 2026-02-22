@@ -83,11 +83,20 @@ def check_coverage(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--compare", nargs=2, metavar=("PR", "MAIN"))
+    parser.add_argument("--update", action="store_true")
     args = parser.parse_args()
 
+    # Explicit baseline update (local dev only)
+    baseline = Path(".coverage_baseline.json")
+    if args.update and not args.compare:
+        print("Updating coverage baseline")
+        baseline.unlink(missing_ok=True)
+
+    # CI comparison mode
     if args.compare:
         return check_coverage(args.compare[0], args.compare[1], strict=True)
 
+    # Local comparison mode
     return check_coverage(strict=False)
 
 
