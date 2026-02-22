@@ -57,6 +57,7 @@ CONFIG_FILE_NAME = "config.toml"
 class Config:
     data_dir: Path | None = None
     editor: str | None = None
+    auto_open: bool = True
 
 
 @dataclass(frozen=True)
@@ -127,7 +128,14 @@ def load_config(config_file: Path) -> Config:
             raise ValueError("editor must be a string")
         editor = value
 
-    return Config(data_dir=data_dir, editor=editor)
+    auto_open = True
+    if "auto_open" in data:
+        value = data["auto_open"]
+        if not isinstance(value, bool):
+            raise ValueError("auto_open must be a boolean")
+        auto_open = value
+
+    return Config(data_dir=data_dir, editor=editor, auto_open=auto_open)
 
 
 # ---------------------------------------------------------------------------
@@ -135,14 +143,18 @@ def load_config(config_file: Path) -> Config:
 # ---------------------------------------------------------------------------
 
 
-def _write_config(path: Path, data: dict[str, str]) -> None:
+def _write_config(path: Path, data: dict[str, object]) -> None:
     """
     Write config deterministically.
     """
     lines = []
     for key in sorted(data.keys()):
         value = data[key]
-        lines.append(f'{key} = "{value}"')
+        if isinstance(value, bool):
+            serialized = "true" if value else "false"
+            lines.append(f"{key} = {serialized}")
+        else:
+            lines.append(f'{key} = "{value}"')
     path.write_text("\n".join(lines) + "\n")
 
 
@@ -152,7 +164,7 @@ def save_config(context: Context, updates: dict[str, str]) -> None:
     """
     context.home.mkdir(parents=True, exist_ok=True)
 
-    existing: dict[str, str] = {}
+    existing: dict[str, object] = {}
 
     if context.config_file.exists():
         with context.config_file.open("rb") as f:
@@ -176,7 +188,7 @@ def initialize_defaults(context: Context) -> None:
     Initialize missing config keys using sane defaults.
     Existing values are preserved.
     """
-    existing: dict[str, str] = {}
+    existing: dict[str, object] = {}
 
     if context.config_file.exists():
         with context.config_file.open("rb") as f:
@@ -185,6 +197,7 @@ def initialize_defaults(context: Context) -> None:
     defaults = {
         "data_dir": str(context.home / "data"),
         "editor": "vim",
+        "auto_open": True,
     }
 
     updated = dict(existing)
