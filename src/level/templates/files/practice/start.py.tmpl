@@ -12,18 +12,7 @@ Examples:
 - Output:
 """
 
-import time
-import sys
-from pathlib import Path
-
-# Dynamically locate project root (directory containing 'scripts')
-current = Path(__file__).resolve()
-for parent in current.parents:
-    if (parent / "scripts").exists():
-        sys.path.insert(0, str(parent))
-        break
-
-from scripts.test_harness import run_tests
+from level.practice.harness import run_tests
 
 def solve(*args):
     """
