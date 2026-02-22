@@ -36,8 +36,9 @@ def test_create_application_creates_structure(tmp_path, monkeypatch):
     assert app.state == "drafts"
     assert app.path.exists()
     assert (app.path / "meta.toml").exists()
-    assert (app.path / "notes.md").exists()
-    assert (app.path / "artifacts").exists()
+    assert (app.path / "README.md").exists()
+    assert (app.path / "cover-letter.md").exists()
+    assert (app.path / "resume.md").exists()
 
 
 def test_create_application_duplicate_slug(tmp_path, monkeypatch):
