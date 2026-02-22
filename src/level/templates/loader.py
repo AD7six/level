@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from importlib import resources
+from importlib.resources import as_file
 from importlib.resources.abc import Traversable
 from pathlib import Path
 
@@ -98,8 +99,6 @@ def _collect_templates(context: Context, subdir: str) -> dict[str, Path]:
     builtin_root = _builtin_template_root().joinpath(subdir)
     logger.debug(f"Scanning built-in templates in: {builtin_root}")
     if builtin_root.is_dir():
-        from importlib.resources import as_file
-
         with as_file(builtin_root) as builtin_path:
             for path in Path(builtin_path).rglob("*.tmpl"):
                 rel = path.relative_to(builtin_path)
