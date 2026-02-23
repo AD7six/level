@@ -17,6 +17,7 @@ from level.applications.applications import (
     move_application,
 )
 from level.applications.schema import STATES, TERMINAL_STATES
+from level.commands._doctor import make_doctor_handler
 from level.config import build_context
 
 # ---------------------------------------------------------------------------
@@ -132,27 +133,10 @@ def handle_apply_timeline(args: argparse.Namespace) -> None:
 # Doctor Handler
 # ---------------------------------------------------------------------------
 
-
-def handle_apply_doctor(args: argparse.Namespace) -> None:
-    context = build_context()
-    issues = lint_applications(context)
-
-    if issues:
-        print("Issues detected:")
-        for issue in issues:
-            print(f"  - {issue}")
-    else:
-        print("No structural issues detected.")
-
-    if args.fix:
-        actions = fix_applications(context)
-        if actions:
-            print("\nApplied fixes:")
-            for action in actions:
-                print(f"  - {action}")
-        else:
-            print("\nNo fixes required.")
-
+handle_apply_doctor = make_doctor_handler(
+    lint_applications,
+    fix_applications,
+)
 
 # ---------------------------------------------------------------------------
 # Registration

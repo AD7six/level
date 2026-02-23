@@ -203,10 +203,10 @@ def lint_reviews(context: Context) -> list[str]:
             issues.append(f"Invalid meta.toml in {entry.name}")
             continue
 
-        expected_rel = Path(_review_id(review.date, review.period))
+        expected_name = _review_id(review.date, review.period)
 
-        if not is_canonical_location(root, entry, expected_rel):
-            issues.append(f"Review '{entry.name}' should be '{expected_rel.name}'")
+        if entry.name != expected_name:
+            issues.append(f"Review '{entry.name}' should be '{expected_name}'")
 
     return issues
 

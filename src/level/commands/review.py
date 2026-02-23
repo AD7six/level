@@ -5,15 +5,18 @@ Responsible for registering and handling `level review` subcommands.
 """
 
 import argparse
+from collections.abc import Callable
 
 # --- Domain imports ---
 from datetime import date
 from typing import Any
 
+from level.commands._doctor import make_doctor_handler
 from level.config import build_context
 from level.reviews.reviews import (
     Review,
     fix_reviews,
+    lint_reviews,
     list_reviews,
     save_review,
 )
@@ -23,56 +26,26 @@ from level.reviews.reviews import (
 # ---------------------------------------------------------------------------
 
 
-def handle_review_weekly(args: argparse.Namespace) -> None:
-    context = build_context()
-    today = date.today()
+def _make_period_handler(period: str) -> Callable[[argparse.Namespace], None]:
+    def handler(args: argparse.Namespace) -> None:
+        context = build_context()
+        today = date.today()
 
-    review = Review(
-        date=today,
-        period="weekly",
-    )
+        review = Review(
+            date=today,
+            period=period,
+        )
 
-    save_review(context, review)
-    print(f"Created weekly review for {today.isoformat()}")
+        save_review(context, review)
+        print(f"Created {period} review for {today.isoformat()}")
 
-
-def handle_review_monthly(args: argparse.Namespace) -> None:
-    context = build_context()
-    today = date.today()
-
-    review = Review(
-        date=today,
-        period="monthly",
-    )
-
-    save_review(context, review)
-    print(f"Created monthly review for {today.isoformat()}")
+    return handler
 
 
-def handle_review_annual(args: argparse.Namespace) -> None:
-    context = build_context()
-    today = date.today()
-
-    review = Review(
-        date=today,
-        period="annual",
-    )
-
-    save_review(context, review)
-    print(f"Created annual review for {today.isoformat()}")
-
-
-def handle_review_quarterly(args: argparse.Namespace) -> None:
-    context = build_context()
-    today = date.today()
-
-    review = Review(
-        date=today,
-        period="quarterly",
-    )
-
-    save_review(context, review)
-    print(f"Created quarterly review for {today.isoformat()}")
+handle_review_weekly = _make_period_handler("weekly")
+handle_review_monthly = _make_period_handler("monthly")
+handle_review_quarterly = _make_period_handler("quarterly")
+handle_review_annual = _make_period_handler("annual")
 
 
 def handle_review_metrics(args: argparse.Namespace) -> None:
@@ -100,6 +73,16 @@ def handle_review_history(args: argparse.Namespace) -> None:
 
     for r in reviews:
         print(f"{r.date.isoformat()}  {r.period}")
+
+
+# ---------------------------------------------------------------------------
+# Doctor Handler
+# ---------------------------------------------------------------------------
+
+handle_review_doctor = make_doctor_handler(
+    lint_reviews,
+    fix_reviews,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -156,26 +139,6 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
         help="Validate and fix review structure",
     )
     parser_doctor.add_argument("--fix", action="store_true", help="Apply fixes")
-
-    def handle_review_doctor(args: argparse.Namespace) -> None:
-        context = build_context()
-        if args.fix:
-            actions = fix_reviews(context)
-            if actions:
-                print("Actions performed:")
-                for a in actions:
-                    print(f"  - {a}")
-            else:
-                print("No changes required.")
-        else:
-            issues = []
-            issues.extend(fix_reviews(context))
-            if issues:
-                print("Issues detected:")
-                for i in issues:
-                    print(f"  - {i}")
-            else:
-                print("No issues found.")
 
     parser_doctor.set_defaults(func=handle_review_doctor)
 
