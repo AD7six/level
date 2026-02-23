@@ -7,6 +7,7 @@ from pathlib import Path
 
 from level.config import Context
 from level.editor import open_in_editor
+from level.templates.renderer import render_template_to_path
 
 # ---------------------------------------------------------------------------
 # model
@@ -113,10 +114,21 @@ def save_review(context: Context, review: Review) -> None:
             else:
                 f.write(f'{key} = "{value}"\n')
 
-    # Ensure notes.md exists
+    # Render review template (must exist)
     notes_path = review_path / "notes.md"
+
     if not notes_path.exists():
-        notes_path.write_text("# Review Notes\n\n", encoding="utf-8")
+        render_template_to_path(
+            context=context,
+            template_name=f"review/{review.period}.md.tmpl",
+            variables={
+                "date": review.date.isoformat(),
+                "period": review.period,
+            },
+            output_path=notes_path,
+            overwrite=False,
+            strict=True,
+        )
 
     # Open in editor (if enabled)
     open_in_editor(
