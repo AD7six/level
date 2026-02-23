@@ -119,7 +119,9 @@ def save_review(context: Context, review: Review) -> None:
         notes_path.write_text("# Review Notes\n\n", encoding="utf-8")
 
     # Open in editor (if enabled)
-    open_in_editor(notes_path, context)
+    open_in_editor(
+        notes_path, auto_open=context.config.auto_open, editor=context.config.editor
+    )
 
 
 def load_review(context: Context, review_date: date, period: str) -> Review:
