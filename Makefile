@@ -27,7 +27,7 @@ typecheck: ## Run mypy
 
 .PHONY: test
 test: ## Run unit tests
-	$(PYTHON) -m pytest
+	$(PYTHON) -m pytest -x
 
 .PHONY: coverage
 coverage: ## Run tests with coverage and ensure it does not decrease
