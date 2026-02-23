@@ -44,6 +44,11 @@ ready: fmt typecheck test ## Prepare to commit - Format, typecheck, and run test
 clean: ## Remove venv and artifacts
 	rm -rf $(VENV) .pytest_cache .mypy_cache build dist *.egg-info
 
+# Lazy aliases
+cov: coverage
+tc: typecheck
+
+
 $(VENV):
 	python3 -m venv $(VENV)
 	$(PYTHON) -m pip install --upgrade pip
