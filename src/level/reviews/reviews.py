@@ -6,6 +6,7 @@ from datetime import date
 from pathlib import Path
 
 from level.config import Context
+from level.core.canonical import is_canonical_location, rename_to_canonical
 from level.editor import open_in_editor
 from level.templates.renderer import render_template_to_path
 
@@ -197,9 +198,15 @@ def lint_reviews(context: Context) -> list[str]:
         try:
             with meta_path.open("rb") as f:
                 data = tomllib.load(f)
-            Review.from_dict(data)
+            review = Review.from_dict(data)
         except Exception:
             issues.append(f"Invalid meta.toml in {entry.name}")
+            continue
+
+        expected_rel = Path(_review_id(review.date, review.period))
+
+        if not is_canonical_location(root, entry, expected_rel):
+            issues.append(f"Review '{entry.name}' should be '{expected_rel.name}'")
 
     return issues
 
@@ -211,5 +218,29 @@ def fix_reviews(context: Context) -> list[str]:
     if not root.exists():
         root.mkdir(parents=True, exist_ok=True)
         actions.append("Created reviews directory")
+        return actions
+
+    for entry in root.iterdir():
+        if not entry.is_dir():
+            continue
+
+        meta_path = entry / "meta.toml"
+        if not meta_path.exists():
+            continue
+
+        try:
+            with meta_path.open("rb") as f:
+                data = tomllib.load(f)
+            review = Review.from_dict(data)
+        except Exception:
+            continue
+
+        expected_rel = Path(_review_id(review.date, review.period))
+
+        if is_canonical_location(root, entry, expected_rel):
+            continue
+
+        new_path = rename_to_canonical(root, entry, expected_rel)
+        actions.append(f"Moved {entry.name} → {new_path.name}")
 
     return actions
