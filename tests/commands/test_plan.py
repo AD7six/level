@@ -24,10 +24,10 @@ def _context(tmp_path, monkeypatch):
 
 
 def test_plan_show_no_plan(tmp_path, monkeypatch, capsys):
-    _context(tmp_path, monkeypatch)
+    context = _context(tmp_path, monkeypatch)
 
     args = argparse.Namespace()
-    handle_plan_show(args)
+    handle_plan_show(context, args)
 
     captured = capsys.readouterr()
     assert "No plan defined" in captured.out
@@ -47,7 +47,7 @@ def test_plan_show_outputs_display_dict(tmp_path, monkeypatch, capsys):
     save_plan(context, plan)
 
     args = argparse.Namespace()
-    handle_plan_show(args)
+    handle_plan_show(context, args)
 
     captured = capsys.readouterr()
 
@@ -63,10 +63,10 @@ def test_plan_show_outputs_display_dict(tmp_path, monkeypatch, capsys):
 
 
 def test_plan_doctor_detects_missing_meta(tmp_path, monkeypatch, capsys):
-    _context(tmp_path, monkeypatch)
+    context = _context(tmp_path, monkeypatch)
 
     args = argparse.Namespace(fix=False)
-    handle_plan_doctor(args)
+    handle_plan_doctor(context, args)
 
     captured = capsys.readouterr()
     assert (
@@ -76,10 +76,10 @@ def test_plan_doctor_detects_missing_meta(tmp_path, monkeypatch, capsys):
 
 
 def test_plan_doctor_fix_creates_meta(tmp_path, monkeypatch, capsys):
-    _context(tmp_path, monkeypatch)
+    context = _context(tmp_path, monkeypatch)
 
     args = argparse.Namespace(fix=True)
-    handle_plan_doctor(args)
+    handle_plan_doctor(context, args)
 
     captured = capsys.readouterr()
     assert "Created meta.toml" in captured.out or "Actions performed" in captured.out

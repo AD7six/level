@@ -1,9 +1,9 @@
 import argparse
 
-from level.config import build_context, run_diagnostics
+from level.config import Context, run_diagnostics
 
 
-def handle_init(args: argparse.Namespace) -> None:
+def handle_init(context: Context, args: argparse.Namespace) -> None:
     """
     Initialize repository structure.
 
@@ -12,7 +12,6 @@ def handle_init(args: argparse.Namespace) -> None:
 
     It delegates entirely to the diagnostics engine with fix=True.
     """
-    context = build_context()
 
     print("Initializing level repository...\n")
 

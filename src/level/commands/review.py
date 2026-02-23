@@ -12,7 +12,7 @@ from datetime import date
 from typing import Any
 
 from level.commands._doctor import make_doctor_handler
-from level.config import build_context
+from level.config import Context
 from level.reviews.reviews import (
     Review,
     fix_reviews,
@@ -26,9 +26,8 @@ from level.reviews.reviews import (
 # ---------------------------------------------------------------------------
 
 
-def _make_period_handler(period: str) -> Callable[[argparse.Namespace], None]:
-    def handler(args: argparse.Namespace) -> None:
-        context = build_context()
+def _make_period_handler(period: str) -> Callable[[Context, argparse.Namespace], None]:
+    def handler(context: Context, args: argparse.Namespace) -> None:
         today = date.today()
 
         review = Review(
@@ -48,8 +47,7 @@ handle_review_quarterly = _make_period_handler("quarterly")
 handle_review_annual = _make_period_handler("annual")
 
 
-def handle_review_metrics(args: argparse.Namespace) -> None:
-    context = build_context()
+def handle_review_metrics(context: Context, args: argparse.Namespace) -> None:
     reviews = list_reviews(context)
 
     weekly = sum(1 for r in reviews if r.period == "weekly")
@@ -63,8 +61,7 @@ def handle_review_metrics(args: argparse.Namespace) -> None:
     print(f"Annual reviews: {annual}")
 
 
-def handle_review_history(args: argparse.Namespace) -> None:
-    context = build_context()
+def handle_review_history(context: Context, args: argparse.Namespace) -> None:
     reviews = list_reviews(context)
 
     if not reviews:

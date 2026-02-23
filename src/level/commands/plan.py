@@ -2,7 +2,7 @@ import argparse
 import subprocess
 from typing import Any
 
-from level.config import build_context, get_data_root
+from level.config import Context, get_data_root
 from level.plan.plan import (
     fix_plan,
     lint_plan,
@@ -14,8 +14,7 @@ from level.plan.plan import (
 # ---------------------------------------------------------------------------
 
 
-def handle_plan_show(args: argparse.Namespace) -> None:
-    context = build_context()
+def handle_plan_show(context: Context, args: argparse.Namespace) -> None:
     plan = load_plan(context)
 
     if plan is None:
@@ -29,9 +28,7 @@ def handle_plan_show(args: argparse.Namespace) -> None:
         print(f"{k}: {v}")
 
 
-def handle_plan_edit(args: argparse.Namespace) -> None:
-    context = build_context()
-
+def handle_plan_edit(context: Context, args: argparse.Namespace) -> None:
     # Ensure plan directory and canonical structure exist
     fix_plan(context)
 
@@ -42,21 +39,19 @@ def handle_plan_edit(args: argparse.Namespace) -> None:
     subprocess.run([editor, str(meta_path)])
 
 
-def handle_plan_gap(args: argparse.Namespace) -> None:
+def handle_plan_gap(context: Context, args: argparse.Namespace) -> None:
     print("Skill gap analysis not yet implemented.")
 
 
-def handle_plan_goals(args: argparse.Namespace) -> None:
+def handle_plan_goals(context: Context, args: argparse.Namespace) -> None:
     print("Goal listing not yet implemented.")
 
 
-def handle_plan_review(args: argparse.Namespace) -> None:
+def handle_plan_review(context: Context, args: argparse.Namespace) -> None:
     print("Review workflow not yet implemented.")
 
 
-def handle_plan_doctor(args: argparse.Namespace) -> None:
-    context = build_context()
-
+def handle_plan_doctor(context: Context, args: argparse.Namespace) -> None:
     if args.fix:
         actions = fix_plan(context)
         if not actions:

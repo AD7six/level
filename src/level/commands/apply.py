@@ -18,15 +18,14 @@ from level.applications.applications import (
 )
 from level.applications.schema import STATES, TERMINAL_STATES
 from level.commands._doctor import make_doctor_handler
-from level.config import build_context
+from level.config import Context
 
 # ---------------------------------------------------------------------------
 # Handlers
 # ---------------------------------------------------------------------------
 
 
-def handle_apply_new(args: argparse.Namespace) -> None:
-    context = build_context()
+def handle_apply_new(context: Context, args: argparse.Namespace) -> None:
 
     company = args.company
     role = args.role
@@ -68,8 +67,7 @@ def handle_apply_new(args: argparse.Namespace) -> None:
     print(f"  State:   {app.state}")
 
 
-def handle_apply_list(args: argparse.Namespace) -> None:
-    context = build_context()
+def handle_apply_list(context: Context, args: argparse.Namespace) -> None:
     apps = list(list_applications(context, state=args.state))
 
     # Filter terminal states unless --all is provided
@@ -106,8 +104,7 @@ def handle_apply_list(args: argparse.Namespace) -> None:
         print()
 
 
-def handle_apply_show(args: argparse.Namespace) -> None:
-    context = build_context()
+def handle_apply_show(context: Context, args: argparse.Namespace) -> None:
     app = get_application(context, args.slug)
 
     print(f"Slug:       {app.slug}")
@@ -118,13 +115,12 @@ def handle_apply_show(args: argparse.Namespace) -> None:
     print(f"Path:       {app.path}")
 
 
-def handle_apply_move(args: argparse.Namespace) -> None:
-    context = build_context()
+def handle_apply_move(context: Context, args: argparse.Namespace) -> None:
     app = move_application(context, args.slug, args.state)
     print(f"✔ Moved '{app.slug}' to '{app.state}'")
 
 
-def handle_apply_timeline(args: argparse.Namespace) -> None:
+def handle_apply_timeline(context: Context, args: argparse.Namespace) -> None:
     # Timeline not yet implemented – placeholder for future domain expansion
     print("Timeline not yet implemented.")
 

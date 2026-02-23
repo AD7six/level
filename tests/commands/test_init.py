@@ -17,7 +17,8 @@ def test_init_always_fixes(tmp_path, monkeypatch):
     level_home = tmp_path / "missing_home"
     monkeypatch.setenv("LEVEL_HOME", str(level_home))
 
-    handle_init(argparse.Namespace())
+    context = build_context()
+    handle_init(context, argparse.Namespace())
 
     assert level_home.exists()
 
@@ -25,7 +26,8 @@ def test_init_always_fixes(tmp_path, monkeypatch):
 def test_init_creates_managed_domains(tmp_path, monkeypatch):
     monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
 
-    handle_init(argparse.Namespace())
+    context = build_context()
+    handle_init(context, argparse.Namespace())
 
     assert (tmp_path / "applications").exists()
 
@@ -33,8 +35,9 @@ def test_init_creates_managed_domains(tmp_path, monkeypatch):
 def test_init_is_idempotent(tmp_path, monkeypatch):
     monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
 
-    handle_init(argparse.Namespace())
-    handle_init(argparse.Namespace())
+    context = build_context()
+    handle_init(context, argparse.Namespace())
+    handle_init(context, argparse.Namespace())
 
     assert (tmp_path / "applications").exists()
 
@@ -50,9 +53,8 @@ def test_init_respects_data_dir(tmp_path, monkeypatch):
     config_file = level_home / "config.toml"
     config_file.write_text(f'data_dir = "{data_dir}"\n')
 
-    handle_init(argparse.Namespace())
-
     context = build_context()
+    handle_init(context, argparse.Namespace())
     data_root = get_data_root(context)
 
     assert data_root == data_dir

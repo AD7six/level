@@ -13,6 +13,7 @@ from typing import Any, cast
 
 import level.commands
 from level import __version__
+from level.config import build_context
 from level.logging import configure_logging
 
 # ---------------------------------------------------------------------------
@@ -114,7 +115,8 @@ def main() -> None:
         parser.print_help()
         return
 
-    args.func(args)
+    context = build_context()
+    args.func(context, args)
 
 
 if __name__ == "__main__":

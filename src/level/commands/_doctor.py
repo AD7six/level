@@ -9,11 +9,8 @@ from level.config import Context
 def make_doctor_handler(
     lint_fn: Callable[[Context], list[str]],
     fix_fn: Callable[[Context], list[str]],
-) -> Callable[[argparse.Namespace], None]:
-    def handler(args: argparse.Namespace) -> None:
-        from level.config import build_context
-
-        context = build_context()
+) -> Callable[[Context, argparse.Namespace], None]:
+    def handler(context: Context, args: argparse.Namespace) -> None:
 
         if args.fix:
             actions = fix_fn(context)

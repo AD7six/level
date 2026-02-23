@@ -6,7 +6,7 @@ import argparse
 from typing import Any
 
 from level.config import (
-    build_context,
+    Context,
     initialize_defaults,
     run_diagnostics,
     save_config,
@@ -17,10 +17,9 @@ from level.config import (
 # ---------------------------------------------------------------------------
 
 
-def handle_config_show(args: argparse.Namespace) -> None:
+def handle_config_show(context: Context, args: argparse.Namespace) -> None:
     from dataclasses import fields
 
-    context = build_context()
     print(f"LEVEL_HOME: {context.home}")
     print(f"Config file: {context.config_file}")
 
@@ -30,9 +29,7 @@ def handle_config_show(args: argparse.Namespace) -> None:
         print(f"  {field.name}: {value}")
 
 
-def handle_config_set(args: argparse.Namespace) -> None:
-    context = build_context()
-
+def handle_config_set(context: Context, args: argparse.Namespace) -> None:
     # If no key provided → initialize defaults
     if args.key is None:
         initialize_defaults(context)
@@ -52,8 +49,7 @@ def handle_config_set(args: argparse.Namespace) -> None:
     print(f"[level] Set {args.key} = {args.value}")
 
 
-def handle_config_doctor(args: argparse.Namespace) -> None:
-    context = build_context()
+def handle_config_doctor(context: Context, args: argparse.Namespace) -> None:
     fix = getattr(args, "fix", False)
 
     print("Running configuration diagnostics...\n")

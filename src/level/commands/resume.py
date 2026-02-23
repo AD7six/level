@@ -7,24 +7,26 @@ Responsible for registering and handling `level resume` subcommands.
 import argparse
 from typing import Any
 
+from level.config import Context
+
 # ---------------------------------------------------------------------------
 # Handlers
 # ---------------------------------------------------------------------------
 
 
-def handle_resume_list(args: argparse.Namespace) -> None:
+def handle_resume_list(context: Context, args: argparse.Namespace) -> None:
     print("[level] Listing resume versions (not yet implemented)")
 
 
-def handle_resume_new(args: argparse.Namespace) -> None:
+def handle_resume_new(context: Context, args: argparse.Namespace) -> None:
     print("[level] Creating tailored resume (not yet implemented)")
 
 
-def handle_resume_build(args: argparse.Namespace) -> None:
+def handle_resume_build(context: Context, args: argparse.Namespace) -> None:
     print("[level] Building resume output (not yet implemented)")
 
 
-def handle_resume_diff(args: argparse.Namespace) -> None:
+def handle_resume_diff(context: Context, args: argparse.Namespace) -> None:
     print("[level] Comparing resume versions (not yet implemented)")
 
 
