@@ -1,7 +1,5 @@
 import logging
 
-import pytest
-
 from level.logging import configure_logging
 
 
