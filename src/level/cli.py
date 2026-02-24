@@ -78,7 +78,9 @@ def build_parser(prog_name: str | None = None) -> argparse.ArgumentParser:
         # If the parser has its own subparsers, attach help as default.
         for action in subparser._actions:
             if isinstance(action, argparse._SubParsersAction):
-                subparser.set_defaults(func=lambda args, p=subparser: p.print_help())
+                subparser.set_defaults(
+                    func=lambda context, args, p=subparser: p.print_help()
+                )
                 break
 
     return parser
