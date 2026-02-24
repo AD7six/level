@@ -32,7 +32,7 @@ def test_create_application_creates_structure(tmp_path, monkeypatch):
 
     app = create_application(context, "Acme", "SRE", "2026-01-01")
 
-    assert app.slug == "20260101-acme"
+    assert app.slug == "2026-01-01-acme"
     assert app.state == "drafts"
     assert app.path.exists()
     assert (app.path / "meta.toml").exists()
@@ -47,8 +47,8 @@ def test_create_application_duplicate_slug(tmp_path, monkeypatch):
     first = create_application(context, "Dup", "Role", "2026-01-01")
     second = create_application(context, "Dup", "Role", "2026-01-01")
 
-    assert first.slug == "20260101-dup"
-    assert second.slug == "20260101-dup-1"
+    assert first.slug == "2026-01-01-dup"
+    assert second.slug == "2026-01-01-dup-1"
     assert second.path.exists()
 
 
@@ -66,7 +66,7 @@ def test_list_applications_by_state(tmp_path, monkeypatch):
     apps = list(list_applications(context, state="drafts"))
 
     slugs = {a.slug for a in apps}
-    assert slugs == {"20260101-a", "20260102-b"}
+    assert slugs == {"2026-01-01-a", "2026-01-02-b"}
 
 
 # ---------------------------------------------------------------------------
@@ -79,9 +79,9 @@ def test_get_application(tmp_path, monkeypatch):
 
     create_application(context, "Foo", "Role", "2026-01-01")
 
-    app = get_application(context, "20260101-foo")
+    app = get_application(context, "2026-01-01-foo")
 
-    assert app.slug == "20260101-foo"
+    assert app.slug == "2026-01-01-foo"
     assert app.state == "drafts"
 
 
@@ -102,7 +102,7 @@ def test_valid_transition(tmp_path, monkeypatch):
 
     create_application(context, "Foo", "Role", "2026-01-01")
 
-    app = move_application(context, "20260101-foo", "applied")
+    app = move_application(context, "2026-01-01-foo", "applied")
 
     assert app.state == "applied"
 
@@ -113,7 +113,9 @@ def test_invalid_transition(tmp_path, monkeypatch):
     create_application(context, "Foo", "Role", "2026-01-01")
 
     with pytest.raises(ValueError):
-        move_application(context, "20260101-foo", "interviewing")  # invalid from drafts
+        move_application(
+            context, "2026-01-01-foo", "interviewing"
+        )  # invalid from drafts
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +179,7 @@ def test_fix_moves_to_canonical_location(tmp_path, monkeypatch):
     assert any("Moved" in a for a in actions)
 
     # Canonical path should now exist
-    canonical = tmp_path / "applications" / "drafts" / "20260101-acme"
+    canonical = tmp_path / "applications" / "drafts" / "2026-01-01-acme"
     assert canonical.exists()
 
 
@@ -197,7 +199,7 @@ def test_fix_adds_numeric_suffix_on_collision(tmp_path, monkeypatch):
     fix_applications(context)
 
     # Should create a suffixed directory
-    suffixed = tmp_path / "applications" / "drafts" / "20260101-dup-1"
+    suffixed = tmp_path / "applications" / "drafts" / "2026-01-01-dup-1"
     assert suffixed.exists()
 
 

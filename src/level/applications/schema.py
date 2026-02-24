@@ -51,7 +51,6 @@ def default_schema_dict() -> dict[str, object]:
     return {
         "version": CURRENT_SCHEMA_VERSION,
         "layout": LAYOUT,
-        "slug_format": SLUG_FORMAT,
         "terminal_states": sorted(TERMINAL_STATES),
         "states": sorted(STATES),
     }

@@ -4,10 +4,14 @@ import json
 import tomllib
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 from level.config import Context, get_data_root
-from level.core.canonical import is_canonical_location
+from level.core.canonical import (
+    build_slug,
+    is_canonical_location,
+)
 from level.templates.renderer import render_template_directory
 
 from .schema import STATES
@@ -74,8 +78,11 @@ class ApplicationMeta:
 
 
 def _canonical_slug_from_meta(meta: ApplicationMeta) -> str:
-    normalized_company = meta.company.strip().lower().replace(" ", "-")
-    return f"{meta.created_at}-{normalized_company}"
+    # Opinionated canonical format: YYYY-MM-DD-{name}
+    return build_slug(
+        date.fromisoformat(meta.created_at),
+        meta.company,
+    )
 
 
 def _canonical_rel_path(state: str, meta: ApplicationMeta) -> Path:

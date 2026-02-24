@@ -32,8 +32,8 @@ def test_apply_new_creates_application(tmp_path, monkeypatch, capsys):
 
     captured = capsys.readouterr()
 
-    assert "Created 20260101-acme" in captured.out
-    assert (tmp_path / "applications" / "drafts" / "20260101-acme").exists()
+    assert "Created 2026-01-01-acme" in captured.out
+    assert (tmp_path / "applications" / "drafts" / "2026-01-01-acme").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -67,13 +67,13 @@ def test_apply_show_outputs_details(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path, monkeypatch)
     create_application(context, "Foo", "Role", "2026-01-01")
 
-    args = argparse.Namespace(slug="20260101-foo")
+    args = argparse.Namespace(slug="2026-01-01-foo")
     handle_apply_show(context, args)
 
     captured = capsys.readouterr()
 
     assert "Slug:" in captured.out
-    assert "20260101-foo" in captured.out
+    assert "2026-01-01-foo" in captured.out
 
 
 # ---------------------------------------------------------------------------
@@ -85,10 +85,10 @@ def test_apply_move_moves_application(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path, monkeypatch)
     create_application(context, "Foo", "Role", "2026-01-01")
 
-    args = argparse.Namespace(slug="20260101-foo", state="applied")
+    args = argparse.Namespace(slug="2026-01-01-foo", state="applied")
     handle_apply_move(context, args)
 
     captured = capsys.readouterr()
 
     assert "Moved" in captured.out
-    assert (tmp_path / "applications" / "applied" / "20260101-foo").exists()
+    assert (tmp_path / "applications" / "applied" / "2026-01-01-foo").exists()
