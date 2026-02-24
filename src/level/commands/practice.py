@@ -4,10 +4,17 @@ Practice command module.
 Responsible for registering and handling `level practice` subcommands.
 """
 
+from __future__ import annotations
+
 import argparse
+from datetime import date
 from typing import Any
 
 from level.config import Context
+from level.practice.practice import (
+    create_practice,
+    list_practice,
+)
 
 # ---------------------------------------------------------------------------
 # Handlers
@@ -15,27 +22,35 @@ from level.config import Context
 
 
 def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
-    print("[level] Creating new exercise (not yet implemented)")
+    practice_date = date.fromisoformat(args.date) if args.date else None
+    practice = create_practice(context, practice_date)
+    print(f"Created practice session: {practice.slug}")
 
 
 def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
-    print("[level] Listing exercises (not yet implemented)")
+    sessions = list(list_practice(context))
+    if not sessions:
+        print("No practice sessions found.")
+        return
+
+    for session in sessions:
+        print(session.slug)
 
 
 def handle_practice_open(context: Context, args: argparse.Namespace) -> None:
-    print("[level] Opening exercise workspace (not yet implemented)")
+    print("Not implemented yet.")
 
 
 def handle_practice_review(context: Context, args: argparse.Namespace) -> None:
-    print("[level] Reviewing completed exercises (not yet implemented)")
+    print("Not implemented yet.")
 
 
 def handle_practice_stats(context: Context, args: argparse.Namespace) -> None:
-    print("[level] Showing practice stats (not yet implemented)")
+    print("Not implemented yet.")
 
 
 def handle_practice_archive(context: Context, args: argparse.Namespace) -> None:
-    print("[level] Archiving old exercises (not yet implemented)")
+    print("Not implemented yet.")
 
 
 # ---------------------------------------------------------------------------
@@ -55,6 +70,10 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     parser_new = practice_subparsers.add_parser(
         "new",
         help="Create new coding/system design exercise",
+    )
+    parser_new.add_argument(
+        "--date",
+        help="Optional ISO date (YYYY-MM-DD)",
     )
     parser_new.set_defaults(func=handle_practice_new)
 
@@ -92,3 +111,8 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
         help="Archive old exercises",
     )
     parser_archive.set_defaults(func=handle_practice_archive)
+
+    # Default help if no subcommand provided
+    practice_parser.set_defaults(
+        func=lambda context, args, p=practice_parser: p.print_help()
+    )
