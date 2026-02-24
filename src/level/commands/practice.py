@@ -7,32 +7,34 @@ Responsible for registering and handling `level practice` subcommands.
 import argparse
 from typing import Any
 
+from level.config import Context
+
 # ---------------------------------------------------------------------------
 # Handlers
 # ---------------------------------------------------------------------------
 
 
-def handle_practice_new(args: argparse.Namespace) -> None:
+def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     print("[level] Creating new exercise (not yet implemented)")
 
 
-def handle_practice_list(args: argparse.Namespace) -> None:
+def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
     print("[level] Listing exercises (not yet implemented)")
 
 
-def handle_practice_open(args: argparse.Namespace) -> None:
+def handle_practice_open(context: Context, args: argparse.Namespace) -> None:
     print("[level] Opening exercise workspace (not yet implemented)")
 
 
-def handle_practice_review(args: argparse.Namespace) -> None:
+def handle_practice_review(context: Context, args: argparse.Namespace) -> None:
     print("[level] Reviewing completed exercises (not yet implemented)")
 
 
-def handle_practice_stats(args: argparse.Namespace) -> None:
+def handle_practice_stats(context: Context, args: argparse.Namespace) -> None:
     print("[level] Showing practice stats (not yet implemented)")
 
 
-def handle_practice_archive(args: argparse.Namespace) -> None:
+def handle_practice_archive(context: Context, args: argparse.Namespace) -> None:
     print("[level] Archiving old exercises (not yet implemented)")
 
 

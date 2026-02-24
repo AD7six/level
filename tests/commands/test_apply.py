@@ -25,10 +25,10 @@ def _context(tmp_path, monkeypatch):
 
 
 def test_apply_new_creates_application(tmp_path, monkeypatch, capsys):
-    _context(tmp_path, monkeypatch)
+    context = _context(tmp_path, monkeypatch)
 
     args = argparse.Namespace(company="Acme", role="SRE", date="2026-01-01")
-    handle_apply_new(args)
+    handle_apply_new(context, args)
 
     captured = capsys.readouterr()
 
@@ -48,7 +48,7 @@ def test_apply_list_outputs_entries(tmp_path, monkeypatch, capsys):
     create_application(context, "B", "Role", "2026-01-02")
 
     args = argparse.Namespace(state=None, all=False)
-    handle_apply_list(args)
+    handle_apply_list(context, args)
 
     captured = capsys.readouterr()
 
@@ -68,7 +68,7 @@ def test_apply_show_outputs_details(tmp_path, monkeypatch, capsys):
     create_application(context, "Foo", "Role", "2026-01-01")
 
     args = argparse.Namespace(slug="20260101-foo")
-    handle_apply_show(args)
+    handle_apply_show(context, args)
 
     captured = capsys.readouterr()
 
@@ -86,7 +86,7 @@ def test_apply_move_moves_application(tmp_path, monkeypatch, capsys):
     create_application(context, "Foo", "Role", "2026-01-01")
 
     args = argparse.Namespace(slug="20260101-foo", state="applied")
-    handle_apply_move(args)
+    handle_apply_move(context, args)
 
     captured = capsys.readouterr()
 

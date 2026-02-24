@@ -13,6 +13,7 @@ from typing import Any, cast
 
 import level.commands
 from level import __version__
+from level.config import build_context
 from level.logging import configure_logging
 
 # ---------------------------------------------------------------------------
@@ -77,7 +78,9 @@ def build_parser(prog_name: str | None = None) -> argparse.ArgumentParser:
         # If the parser has its own subparsers, attach help as default.
         for action in subparser._actions:
             if isinstance(action, argparse._SubParsersAction):
-                subparser.set_defaults(func=lambda args, p=subparser: p.print_help())
+                subparser.set_defaults(
+                    func=lambda context, args, p=subparser: p.print_help()
+                )
                 break
 
     return parser
@@ -114,7 +117,8 @@ def main() -> None:
         parser.print_help()
         return
 
-    args.func(args)
+    context = build_context()
+    args.func(context, args)
 
 
 if __name__ == "__main__":

@@ -7,24 +7,26 @@ Responsible for registering and handling `level stats` subcommands.
 import argparse
 from typing import Any
 
+from level.config import Context
+
 # ---------------------------------------------------------------------------
 # Handlers
 # ---------------------------------------------------------------------------
 
 
-def handle_stats_applications(args: argparse.Namespace) -> None:
+def handle_stats_applications(context: Context, args: argparse.Namespace) -> None:
     print("[level] Showing application metrics (not yet implemented)")
 
 
-def handle_stats_interviews(args: argparse.Namespace) -> None:
+def handle_stats_interviews(context: Context, args: argparse.Namespace) -> None:
     print("[level] Showing interview metrics (not yet implemented)")
 
 
-def handle_stats_practice(args: argparse.Namespace) -> None:
+def handle_stats_practice(context: Context, args: argparse.Namespace) -> None:
     print("[level] Showing practice metrics (not yet implemented)")
 
 
-def handle_stats_progression(args: argparse.Namespace) -> None:
+def handle_stats_progression(context: Context, args: argparse.Namespace) -> None:
     print("[level] Showing level progression over time (not yet implemented)")
 
 

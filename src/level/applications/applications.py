@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from level.config import Context, get_data_root
+from level.core.canonical import is_canonical_location
 from level.templates.renderer import render_template_directory
 
 from .schema import STATES
@@ -349,6 +350,10 @@ def lint_applications(context: Context) -> list[str]:
         meta = ApplicationMeta.from_dict(raw)
 
         expected_rel = _canonical_rel_path(state, meta)
+
+        if is_canonical_location(root, app_dir, expected_rel):
+            continue
+
         expected_slug = expected_rel.name
         actual_slug = rel.name
 
