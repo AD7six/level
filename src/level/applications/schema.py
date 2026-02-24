@@ -38,9 +38,6 @@ TERMINAL_STATES: Final[set[str]] = {
     "withdrawn",
 }
 
-SLUG_FORMAT: Final[str] = "YYYYMMDD-company"
-
-
 # ---------------------------------------------------------------------------
 # Materialization
 # ---------------------------------------------------------------------------
