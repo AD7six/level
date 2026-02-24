@@ -75,7 +75,7 @@ class ApplicationMeta:
 
 def _canonical_slug_from_meta(meta: ApplicationMeta) -> str:
     normalized_company = meta.company.strip().lower().replace(" ", "-")
-    return f"{meta.created_at.replace('-', '')}-{normalized_company}"
+    return f"{meta.created_at}-{normalized_company}"
 
 
 def _canonical_rel_path(state: str, meta: ApplicationMeta) -> Path:
