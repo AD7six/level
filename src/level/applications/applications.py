@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import tomllib
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -12,6 +11,7 @@ from level.core.canonical import (
     build_slug,
     is_canonical_location,
 )
+from level.core.meta import write_meta_toml
 from level.templates.renderer import render_template_directory
 
 from .schema import STATES
@@ -124,18 +124,6 @@ def _resolve_target_path(
 # ---------------------------------------------------------------------------
 
 
-def _write_meta_toml(path: Path, data: Mapping[str, object]) -> None:
-    lines: list[str] = []
-    for key, value in data.items():
-        if value is None:
-            continue
-        if isinstance(value, str):
-            lines.append(f"{key} = {json.dumps(value)}")
-        else:
-            lines.append(f"{key} = {value}")
-    path.write_text("\n".join(lines) + "\n")
-
-
 def _load_meta(path: Path) -> dict[str, object]:
     toml_path = path / "meta.toml"
 
@@ -203,7 +191,7 @@ def create_application(
     path.parent.mkdir(parents=True, exist_ok=True)
     path.mkdir(parents=True)
 
-    _write_meta_toml(path / "meta.toml", meta.to_dict())
+    write_meta_toml(path / "meta.toml", meta)
 
     # Render application templates
     context_data = {

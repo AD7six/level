@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import tomllib
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
 from level.config import Context, get_data_root
+from level.core.meta import write_meta_toml
 
 # ---------------------------------------------------------------------------
 # Model
@@ -135,35 +136,6 @@ def _plan_meta_path(context: Context) -> Path:
     return _plan_root(context) / "meta.toml"
 
 
-def _write_meta_toml(path: Path, plan: Plan) -> None:
-    lines: list[str] = []
-
-    for f in fields(Plan):
-        key = f.name
-        comment = f.metadata.get("comment")
-        value = getattr(plan, key)
-
-        if comment:
-            lines.append(f"# {comment}")
-
-        if isinstance(value, list):
-            items = ", ".join(f'"{v}"' for v in value)
-            lines.append(f"{key} = [{items}]")
-        elif isinstance(value, str):
-            lines.append(f'{key} = "{value}"')
-        elif isinstance(value, date):
-            lines.append(f"{key} = {value.isoformat()}")
-        elif value is None:
-            # Preserve key explicitly
-            lines.append(f'{key} = ""')
-        else:
-            lines.append(f"{key} = {value}")
-
-        lines.append("")
-
-    path.write_text("\n".join(lines).rstrip() + "\n")
-
-
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -206,6 +178,11 @@ def load_plan(context: Context) -> Plan | None:
         value = raw.get(key)
         if isinstance(value, date):
             return value
+        if isinstance(value, str):
+            try:
+                return date.fromisoformat(value)
+            except ValueError:
+                return None
         return None
 
     return Plan(
@@ -229,7 +206,7 @@ def save_plan(context: Context, plan: Plan) -> None:
     root = _plan_root(context)
     root.mkdir(parents=True, exist_ok=True)
 
-    _write_meta_toml(_plan_meta_path(context), plan)
+    write_meta_toml(_plan_meta_path(context), plan)
 
     notes_path = root / "notes.md"
     if not notes_path.exists():

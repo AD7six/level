@@ -7,9 +7,9 @@ Responsible for registering and handling `level practice` subcommands.
 from __future__ import annotations
 
 import argparse
+import random
 from datetime import date
 from typing import Any
-import random
 
 from level.config import Context
 from level.practice.practice import (
@@ -22,7 +22,7 @@ from level.practice.practice import (
 # ---------------------------------------------------------------------------
 
 DRILLS = [
-    # Logs 
+    # Logs
     "log-parse-count-by-user",
     "log-parse-top-ip",
     "log-parse-error-rate",
@@ -30,8 +30,7 @@ DRILLS = [
     "group-by-status-code",
     "deduplicate-log-entries",
     "sliding-window-error-spike",
-
-    # General 
+    # General
     "counter",
     "defaultdict-grouping",
     "heap-top-k",
@@ -49,17 +48,12 @@ DRILLS = [
 def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     practice_date = date.fromisoformat(args.date) if args.date else None
 
-    practice_type = args.type or "code"
+    practice_type = getattr(args, "type", None) or "code"
 
-    if args.random:
+    if getattr(args, "random", False):
         selected = random.choice(DRILLS)
     else:
-        if not args.name:
-            # Show help instead of raising
-            if hasattr(args, "parser"):
-                args.parser.print_help()
-            return
-        selected = args.name
+        selected = getattr(args, "name", None) or "session"
 
     name_component = f"{practice_type}-{selected}"
 

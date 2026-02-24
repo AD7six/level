@@ -26,7 +26,7 @@ def test_create_practice_creates_directory_and_file(tmp_path):
     practice_dir = tmp_path / "practice" / "2026-02-24-session"
     assert practice.slug == "2026-02-24-session"
     assert practice_dir.exists()
-    assert (practice_dir / "start.py").exists()
+    assert (practice_dir / "00-start.py").exists()
 
 
 def test_list_practice_returns_created_sessions(tmp_path):

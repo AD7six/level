@@ -7,8 +7,9 @@ from pathlib import Path
 
 from level.config import Context
 from level.core.canonical import build_slug, rename_to_canonical
-from level.templates.renderer import render_template_to_path
+from level.core.meta import write_meta_toml
 from level.templates.loader import TemplateNotFoundError
+from level.templates.renderer import render_template_to_path
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,15 @@ def create_practice(
 
     practice_dir = root / slug
     practice_dir.mkdir(parents=True, exist_ok=False)
+
+    # Write meta.toml
+    write_meta_toml(
+        practice_dir / "meta.toml",
+        {
+            "date": practice_date,
+            "name": name,
+        },
+    )
 
     # Prefer drill-specific template if it exists, otherwise fallback to default
     specific_template = f"practice/{name}.py.tmpl"
@@ -96,6 +106,11 @@ def lint_practice(context: Context) -> list[str]:
 
     for child in root.iterdir():
         if not child.is_dir():
+            continue
+
+        # meta.toml is required for canonical practice directories
+        if not (child / "meta.toml").exists():
+            issues.append(f"Invalid practice directory name: {child.name}")
             continue
 
         parts = child.name.split("-", 3)

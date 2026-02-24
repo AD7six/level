@@ -19,12 +19,12 @@ def test_practice_new_creates_session(tmp_path, capsys):
     args = Namespace(date="2026-02-24")
     practice_cmd.handle_practice_new(context, args)
 
-    practice_dir = tmp_path / "practice" / "2026-02-24-session"
+    practice_dir = tmp_path / "practice" / "2026-02-24-code-session"
     assert practice_dir.exists()
-    assert (practice_dir / "start.py").exists()
+    assert (practice_dir / "00-start.py").exists()
 
     output = capsys.readouterr().out
-    assert "Created practice session: 2026-02-24-session" in output
+    assert "Created practice session: 2026-02-24-code-session" in output
 
 
 def test_practice_list_outputs_sessions(tmp_path, capsys):
@@ -40,4 +40,4 @@ def test_practice_list_outputs_sessions(tmp_path, capsys):
     practice_cmd.handle_practice_list(context, Namespace())
 
     output = capsys.readouterr().out.strip().splitlines()
-    assert output == ["2026-02-20-session", "2026-02-21-session"]
+    assert output == ["2026-02-20-code-session", "2026-02-21-code-session"]
