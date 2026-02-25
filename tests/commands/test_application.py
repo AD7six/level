@@ -1,11 +1,11 @@
 import argparse
 
 from level.applications.applications import create_application
-from level.commands.apply import (
-    handle_apply_list,
-    handle_apply_move,
-    handle_apply_new,
-    handle_apply_show,
+from level.commands.application import (
+    handle_application_list,
+    handle_application_move,
+    handle_application_new,
+    handle_application_show,
 )
 from level.config import build_context
 
@@ -24,11 +24,11 @@ def _context(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_apply_new_creates_application(tmp_path, monkeypatch, capsys):
+def test_application_new_creates_application(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path, monkeypatch)
 
     args = argparse.Namespace(company="Acme", role="SRE", date="2026-01-01")
-    handle_apply_new(context, args)
+    handle_application_new(context, args)
 
     captured = capsys.readouterr()
 
@@ -41,14 +41,14 @@ def test_apply_new_creates_application(tmp_path, monkeypatch, capsys):
 # ---------------------------------------------------------------------------
 
 
-def test_apply_list_outputs_entries(tmp_path, monkeypatch, capsys):
+def test_application_list_outputs_entries(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path, monkeypatch)
 
     create_application(context, "A", "Role", "2026-01-01")
     create_application(context, "B", "Role", "2026-01-02")
 
     args = argparse.Namespace(state=None, all=False)
-    handle_apply_list(context, args)
+    handle_application_list(context, args)
 
     captured = capsys.readouterr()
 
@@ -63,12 +63,12 @@ def test_apply_list_outputs_entries(tmp_path, monkeypatch, capsys):
 # ---------------------------------------------------------------------------
 
 
-def test_apply_show_outputs_details(tmp_path, monkeypatch, capsys):
+def test_application_show_outputs_details(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path, monkeypatch)
     create_application(context, "Foo", "Role", "2026-01-01")
 
     args = argparse.Namespace(slug="2026-01-01-foo")
-    handle_apply_show(context, args)
+    handle_application_show(context, args)
 
     captured = capsys.readouterr()
 
@@ -81,12 +81,12 @@ def test_apply_show_outputs_details(tmp_path, monkeypatch, capsys):
 # ---------------------------------------------------------------------------
 
 
-def test_apply_move_moves_application(tmp_path, monkeypatch, capsys):
+def test_application_move_moves_application(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path, monkeypatch)
     create_application(context, "Foo", "Role", "2026-01-01")
 
     args = argparse.Namespace(slug="2026-01-01-foo", state="applied")
-    handle_apply_move(context, args)
+    handle_application_move(context, args)
 
     captured = capsys.readouterr()
 
