@@ -76,3 +76,54 @@ def test_fix_renames_non_canonical_directory(tmp_path):
 
     issues = lint_practice(context)
     assert any("Invalid practice directory name" in i for i in issues)
+
+
+def test_lint_detects_invalid_meta(tmp_path):
+    context = _context(tmp_path)
+    practice_root = tmp_path / "practice"
+    practice_root.mkdir(parents=True, exist_ok=True)
+
+    bad = practice_root / "2026-02-27-session"
+    bad.mkdir()
+    (bad / "meta.toml").write_text("not = valid = toml")
+
+    issues = lint_practice(context)
+    assert any("Invalid meta.toml" in i for i in issues)
+
+
+def test_lint_detects_missing_meta_fields(tmp_path):
+    context = _context(tmp_path)
+    practice_root = tmp_path / "practice"
+    practice_root.mkdir(parents=True, exist_ok=True)
+
+    bad = practice_root / "2026-02-28-session"
+    bad.mkdir()
+    (bad / "meta.toml").write_text("date = \"2026-02-28\"")
+
+    issues = lint_practice(context)
+    assert any("meta.toml missing required fields" in i for i in issues)
+
+
+def test_fix_renames_to_canonical_from_meta(tmp_path):
+    context = _context(tmp_path)
+    practice_root = tmp_path / "practice"
+    practice_root.mkdir(parents=True, exist_ok=True)
+
+    wrong = practice_root / "wrong-name"
+    wrong.mkdir()
+    (wrong / "meta.toml").write_text('date = "2026-03-01"\nname = "session"')
+
+    changes = fix_practice(context)
+
+    assert any("Renamed wrong-name" in c for c in changes)
+    assert (practice_root / "2026-03-01-session").exists()
+
+
+def test_create_practice_collision_suffix(tmp_path):
+    context = _context(tmp_path)
+
+    first = create_practice(context, date(2026, 3, 2))
+    second = create_practice(context, date(2026, 3, 2))
+
+    assert first.slug == "2026-03-02-session"
+    assert second.slug == "2026-03-02-session-1"
