@@ -51,7 +51,7 @@ def test_lint_detects_invalid_directory_name(tmp_path):
 
     issues = lint_practice(context)
 
-    assert "Invalid practice directory name: not-a-date" in issues
+    assert any("Invalid practice directory name: not-a-date" in i for i in issues)
 
 
 def test_fix_renames_non_canonical_directory(tmp_path):
