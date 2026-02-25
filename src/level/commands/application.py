@@ -147,7 +147,9 @@ def register(
         help="Application tracking commands",
     )
 
-    application_subparsers = application_parser.add_subparsers(dest="application_command")
+    application_subparsers = application_parser.add_subparsers(
+        dest="application_command"
+    )
 
     # application new
     application_new_parser = application_subparsers.add_parser(

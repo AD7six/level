@@ -11,9 +11,12 @@ import random
 from datetime import date
 from typing import Any
 
+from level.commands._doctor import make_doctor_handler
 from level.config import Context
 from level.practice.practice import (
     create_practice,
+    fix_practice,
+    lint_practice,
     list_practice,
 )
 
@@ -86,6 +89,15 @@ def handle_practice_stats(context: Context, args: argparse.Namespace) -> None:
 def handle_practice_archive(context: Context, args: argparse.Namespace) -> None:
     print("Not implemented yet.")
 
+
+# ---------------------------------------------------------------------------
+# Doctor Handler
+# ---------------------------------------------------------------------------
+
+handle_practice_doctor = make_doctor_handler(
+    lint_practice,
+    fix_practice,
+)
 
 # ---------------------------------------------------------------------------
 # Registration
@@ -161,6 +173,18 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     )
     parser_archive.set_defaults(func=handle_practice_archive)
 
+    # practice doctor
+    practice_doctor_parser = practice_subparsers.add_parser(
+        "doctor",
+        help="Lint and optionally fix practice structure",
+    )
+    practice_doctor_parser.add_argument(
+        "--fix",
+        action="store_true",
+        help="Apply fixes",
+    )
+
+    practice_doctor_parser.set_defaults(func=handle_practice_doctor)
     # Default help if no subcommand provided
     practice_parser.set_defaults(
         func=lambda context, args, p=practice_parser: p.print_help()
