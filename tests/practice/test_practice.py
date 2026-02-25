@@ -98,7 +98,7 @@ def test_lint_detects_missing_meta_fields(tmp_path):
 
     bad = practice_root / "2026-02-28-session"
     bad.mkdir()
-    (bad / "meta.toml").write_text("date = \"2026-02-28\"")
+    (bad / "meta.toml").write_text('date = "2026-02-28"')
 
     issues = lint_practice(context)
     assert any("meta.toml missing required fields" in i for i in issues)
