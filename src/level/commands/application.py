@@ -1,7 +1,7 @@
 """
 Apply command module.
 
-Responsible for registering and handling `level apply` subcommands.
+Responsible for registering and handling `level application` subcommands.
 """
 
 import argparse
@@ -25,7 +25,7 @@ from level.config import Context
 # ---------------------------------------------------------------------------
 
 
-def handle_apply_new(context: Context, args: argparse.Namespace) -> None:
+def handle_application_new(context: Context, args: argparse.Namespace) -> None:
 
     company = args.company
     role = args.role
@@ -67,7 +67,7 @@ def handle_apply_new(context: Context, args: argparse.Namespace) -> None:
     print(f"  State:   {app.state}")
 
 
-def handle_apply_list(context: Context, args: argparse.Namespace) -> None:
+def handle_application_list(context: Context, args: argparse.Namespace) -> None:
     apps = list(list_applications(context, state=args.state))
 
     # Filter terminal states unless --all is provided
@@ -104,7 +104,7 @@ def handle_apply_list(context: Context, args: argparse.Namespace) -> None:
         print()
 
 
-def handle_apply_show(context: Context, args: argparse.Namespace) -> None:
+def handle_application_show(context: Context, args: argparse.Namespace) -> None:
     app = get_application(context, args.slug)
 
     print(f"Slug:       {app.slug}")
@@ -115,12 +115,12 @@ def handle_apply_show(context: Context, args: argparse.Namespace) -> None:
     print(f"Path:       {app.path}")
 
 
-def handle_apply_move(context: Context, args: argparse.Namespace) -> None:
+def handle_application_move(context: Context, args: argparse.Namespace) -> None:
     app = move_application(context, args.slug, args.state)
     print(f"✔ Moved '{app.slug}' to '{app.state}'")
 
 
-def handle_apply_timeline(context: Context, args: argparse.Namespace) -> None:
+def handle_application_timeline(context: Context, args: argparse.Namespace) -> None:
     # Timeline not yet implemented – placeholder for future domain expansion
     print("Timeline not yet implemented.")
 
@@ -129,7 +129,7 @@ def handle_apply_timeline(context: Context, args: argparse.Namespace) -> None:
 # Doctor Handler
 # ---------------------------------------------------------------------------
 
-handle_apply_doctor = make_doctor_handler(
+handle_application_doctor = make_doctor_handler(
     lint_applications,
     fix_applications,
 )
@@ -142,79 +142,81 @@ handle_apply_doctor = make_doctor_handler(
 def register(
     subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
-    apply_parser = subparsers.add_parser(
-        "apply",
+    application_parser = subparsers.add_parser(
+        "application",
         help="Application tracking commands",
     )
 
-    apply_subparsers = apply_parser.add_subparsers(dest="apply_command")
+    application_subparsers = application_parser.add_subparsers(
+        dest="application_command"
+    )
 
-    # apply new
-    apply_new_parser = apply_subparsers.add_parser(
+    # application new
+    application_new_parser = application_subparsers.add_parser(
         "new",
         help="Create new application entry",
     )
-    apply_new_parser.add_argument(
+    application_new_parser.add_argument(
         "--date", help="Application date", default=date.today().strftime("%Y-%m-%d")
     )
-    apply_new_parser.add_argument("--company", help="Company name")
-    apply_new_parser.add_argument("--role", help="Role title")
-    apply_new_parser.set_defaults(func=handle_apply_new)
+    application_new_parser.add_argument("--company", help="Company name")
+    application_new_parser.add_argument("--role", help="Role title")
+    application_new_parser.set_defaults(func=handle_application_new)
 
-    # apply list
-    apply_list_parser = apply_subparsers.add_parser(
+    # application list
+    application_list_parser = application_subparsers.add_parser(
         "list",
         help="List applications",
     )
-    apply_list_parser.add_argument(
+    application_list_parser.add_argument(
         "--state",
         choices=sorted(STATES),
         help="Filter by state",
     )
-    apply_list_parser.add_argument(
+    application_list_parser.add_argument(
         "--all",
         action="store_true",
         help="Include terminal states",
     )
-    apply_list_parser.set_defaults(func=handle_apply_list)
+    application_list_parser.set_defaults(func=handle_application_list)
 
-    # apply show
-    apply_show_parser = apply_subparsers.add_parser(
+    # application show
+    application_show_parser = application_subparsers.add_parser(
         "show",
         help="Show application details",
     )
-    apply_show_parser.add_argument("slug", help="Application slug")
-    apply_show_parser.set_defaults(func=handle_apply_show)
+    application_show_parser.add_argument("slug", help="Application slug")
+    application_show_parser.set_defaults(func=handle_application_show)
 
-    # apply move
-    apply_move_parser = apply_subparsers.add_parser(
+    # application move
+    application_move_parser = application_subparsers.add_parser(
         "move",
         help="Move between pipeline stages",
     )
-    apply_move_parser.add_argument("slug", help="Application slug")
-    apply_move_parser.add_argument(
+    application_move_parser.add_argument("slug", help="Application slug")
+    application_move_parser.add_argument(
         "state",
         choices=sorted(STATES),
         help="New state",
     )
-    apply_move_parser.set_defaults(func=handle_apply_move)
+    application_move_parser.set_defaults(func=handle_application_move)
 
-    # apply doctor
-    apply_doctor_parser = apply_subparsers.add_parser(
+    # application doctor
+    application_doctor_parser = application_subparsers.add_parser(
         "doctor",
         help="Lint and optionally fix application structure",
     )
-    apply_doctor_parser.add_argument(
+    application_doctor_parser.add_argument(
         "--fix",
         action="store_true",
         help="Apply fixes",
     )
-    apply_doctor_parser.set_defaults(func=handle_apply_doctor)
+    application_doctor_parser.set_defaults(func=handle_application_doctor)
 
-    # apply timeline
-    apply_timeline_parser = apply_subparsers.add_parser(
+    # application timeline
+    application_timeline_parser = application_subparsers.add_parser(
         "timeline",
         help="Show application timeline",
     )
-    apply_timeline_parser.add_argument("slug", help="Application slug")
-    apply_timeline_parser.set_defaults(func=handle_apply_timeline)
+    application_timeline_parser.add_argument("slug", help="Application slug")
+    application_timeline_parser.set_defaults(func=handle_application_timeline)

@@ -18,8 +18,8 @@ def test_group_command_prints_help(monkeypatch):
 
     from level.cli import main
 
-    # Simulate: level apply
-    monkeypatch.setattr(sys, "argv", ["level", "apply"])
+    # Simulate: level application
+    monkeypatch.setattr(sys, "argv", ["level", "application"])
 
     stdout = StringIO()
     with redirect_stdout(stdout):
@@ -31,4 +31,4 @@ def test_group_command_prints_help(monkeypatch):
 
     output = stdout.getvalue()
     assert "usage:" in output
-    assert "apply" in output
+    assert "application" in output

@@ -71,17 +71,18 @@ def build_parser(prog_name: str | None = None) -> argparse.ArgumentParser:
     # Automatically attach help-as-default for command groups that
     # define subparsers but did not explicitly set a default handler.
     for subparser in subparsers.choices.values():
-        # If the parser already defines a default func, respect it.
         if "func" in getattr(subparser, "_defaults", {}):
             continue
 
-        # If the parser has its own subparsers, attach help as default.
-        for action in subparser._actions:
-            if isinstance(action, argparse._SubParsersAction):
-                subparser.set_defaults(
-                    func=lambda context, args, p=subparser: p.print_help()
-                )
-                break
+        has_subcommands = any(
+            isinstance(action, argparse._SubParsersAction)
+            for action in subparser._actions
+        )
+
+        if has_subcommands:
+            subparser.set_defaults(
+                func=lambda context, args, p=subparser: p.print_help()
+            )
 
     return parser
 
