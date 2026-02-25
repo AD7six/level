@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tomllib
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
@@ -108,25 +109,47 @@ def lint_practice(context: Context) -> list[str]:
         if not child.is_dir():
             continue
 
-        # meta.toml is required for canonical practice directories
-        if not (child / "meta.toml").exists():
-            issues.append(f"Invalid practice directory name: {child.name}")
-            continue
-
-        parts = child.name.split("-", 3)
-        if len(parts) < 4:
-            issues.append(f"Invalid practice directory name: {child.name}")
+        meta_path = child / "meta.toml"
+        if not meta_path.exists():
+            issues.append(
+                f"meta.toml not found; Invalid practice directory name: {child.name}"
+            )
             continue
 
         try:
-            practice_date = date.fromisoformat("-".join(parts[:3]))
-        except ValueError:
-            issues.append(f"Invalid practice directory name: {child.name}")
+            with meta_path.open("rb") as f:
+                raw = tomllib.load(f)
+        except Exception:
+            issues.append(f"Invalid meta.toml in: {child.name}")
             continue
 
-        # Canonical slug should start with YYYY-MM-DD-
-        if not child.name.startswith(practice_date.isoformat() + "-"):
-            issues.append(f"Non-canonical practice directory: {child.name}")
+        practice_date = raw.get("date")
+        name = raw.get("name")
+
+        if not practice_date or not name:
+            issues.append(f"meta.toml missing required fields in: {child.name}")
+            continue
+
+        try:
+            parsed_date = date.fromisoformat(str(practice_date))
+        except ValueError:
+            issues.append(f"Invalid date in meta.toml for: {child.name}")
+            continue
+
+        expected_slug = build_slug(parsed_date, str(name))
+
+        # Allow numeric suffix for collision resolution
+        if child.name == expected_slug:
+            continue
+
+        if child.name.startswith(expected_slug + "-"):
+            suffix = child.name[len(expected_slug) + 1 :]
+            if suffix.isdigit():
+                continue
+
+        issues.append(
+            f"Non-canonical practice directory: {child.name} (expected {expected_slug})"
+        )
 
     return issues
 
@@ -139,21 +162,34 @@ def fix_practice(context: Context) -> list[str]:
         if not child.is_dir():
             continue
 
-        parts = child.name.split("-", 3)
-        if len(parts) < 4:
+        meta_path = child / "meta.toml"
+        if not meta_path.exists():
             continue
 
         try:
-            practice_date = date.fromisoformat("-".join(parts[:3]))
+            with meta_path.open("rb") as f:
+                raw = tomllib.load(f)
+        except Exception:
+            continue
+
+        practice_date = raw.get("date")
+        name = raw.get("name")
+
+        if not practice_date or not name:
+            continue
+
+        try:
+            parsed_date = date.fromisoformat(str(practice_date))
         except ValueError:
             continue
 
-        # Rebuild canonical slug from extracted date and remainder
-        name_part = child.name[len(practice_date.isoformat()) + 1 :]
-        expected = build_slug(practice_date, name_part)
+        expected_slug = build_slug(parsed_date, str(name))
 
-        if child.name != expected:
-            new_path = rename_to_canonical(root, child, Path(expected))
-            changes.append(f"Renamed {child.name} -> {new_path.name}")
+        if child.name == expected_slug:
+            continue
+
+        # Preserve numeric suffix behavior via canonical rename helper
+        new_path = rename_to_canonical(root, child, Path(expected_slug))
+        changes.append(f"Renamed {child.name} -> {new_path.name}")
 
     return changes
