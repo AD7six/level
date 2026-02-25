@@ -6,11 +6,13 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
+from level.checks.base import Finding, FixResult
+from level.checks.canonical_location import CanonicalLocation
+from level.checks.meta_readable import MetaReadable
+from level.checks.meta_schema import MetaSchema
 from level.config import Context, get_data_root
-from level.core.canonical import (
-    build_slug,
-    is_canonical_location,
-)
+from level.core.canonical import build_slug
+from level.core.doctor import Domain, fix_domain, lint_domain
 from level.core.meta import write_meta_toml
 from level.templates.renderer import render_template_directory
 
@@ -320,85 +322,51 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
 # ---------------------------------------------------------------------------
 
 
-def lint_applications(context: Context) -> list[str]:
-    issues: list[str] = []
+def _applications_finder(context: Context) -> list[Path]:
     root = _applications_root(context)
-
     if not root.exists():
-        return issues
+        return []
+    return [meta.parent for meta in root.rglob("meta.toml")]
 
-    for meta_file in root.rglob("meta.toml"):
-        app_dir = meta_file.parent
-        rel = app_dir.relative_to(root)
-        parts = rel.parts
 
-        if not parts:
-            continue
-
-        state = parts[0]
-
-        if state not in STATES:
-            issues.append(f"Application '{rel}' has unknown state: {state}")
-            continue
-
-        raw = _load_meta(app_dir)
+def _applications_canonical_rel(context: Context, entity: Path) -> Path | None:
+    try:
+        raw = _load_meta(entity)
         meta = ApplicationMeta.from_dict(raw)
+    except Exception:
+        return None
 
-        expected_rel = _canonical_rel_path(state, meta)
+    rel = entity.relative_to(_applications_root(context))
+    parts = rel.parts
 
-        if is_canonical_location(root, app_dir, expected_rel):
-            continue
+    if not parts:
+        return None
 
-        expected_slug = expected_rel.name
-        actual_slug = rel.name
+    state = parts[0]
+    if state not in STATES:
+        return None
 
-        # Allow numeric suffixes for collision resolution
-        if actual_slug == expected_slug:
-            continue
-
-        if actual_slug.startswith(expected_slug + "-"):
-            suffix = actual_slug[len(expected_slug) + 1 :]
-            if suffix.isdigit():
-                continue
-
-        issues.append(
-            f"Application '{rel}' is not in canonical location '{expected_rel}'"
-        )
-
-    return issues
-
-
-def fix_applications(context: Context) -> list[str]:
-    actions: list[str] = []
     root = _applications_root(context)
+    expected_rel = _canonical_rel_path(state, meta)
+    return root / expected_rel
 
-    if not root.exists():
-        return actions
 
-    for meta_file in root.rglob("meta.toml"):
-        app_dir = meta_file.parent
-        rel = app_dir.relative_to(root)
-        parts = rel.parts
+_applications_domain = Domain(
+    finder=_applications_finder,
+    checks=[
+        MetaReadable(),
+        MetaSchema(),
+        CanonicalLocation(
+            canonical_rel=_applications_canonical_rel,
+            root_resolver=_applications_root,
+        ),
+    ],
+)
 
-        if not parts:
-            continue
 
-        state = parts[0]
+def lint_applications(context: Context) -> list[Finding]:
+    return lint_domain(context, _applications_domain)
 
-        if state not in STATES:
-            continue
 
-        raw = _load_meta(app_dir)
-        meta = ApplicationMeta.from_dict(raw)
-
-        target = _resolve_target_path(context, state, meta, current_path=app_dir)
-
-        if app_dir == target:
-            continue
-
-        target.parent.mkdir(parents=True, exist_ok=True)
-        app_dir.rename(target)
-
-        actions.append(f"Moved {rel} → {target.relative_to(root)}")
-
-    return actions
+def fix_applications(context: Context) -> list[FixResult]:
+    return fix_domain(context, _applications_domain)

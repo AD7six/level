@@ -5,8 +5,12 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
+from level.checks.base import Finding, FixResult
+from level.checks.canonical_location import CanonicalLocation
+from level.checks.meta_readable import MetaReadable
+from level.checks.meta_schema import MetaSchema
 from level.config import Context
-from level.core.canonical import is_canonical_location, rename_to_canonical
+from level.core.doctor import Domain, fix_domain, lint_domain
 from level.editor import open_in_editor
 from level.templates.renderer import render_template_to_path
 
@@ -173,74 +177,51 @@ def list_reviews(context: Context) -> list[Review]:
     return sorted(reviews, key=lambda r: r.date, reverse=True)
 
 
+def _reviews_finder(context: Context) -> list[Path]:
+    root = _reviews_dir(context)
+    if not root.exists():
+        return []
+    return [entry for entry in root.iterdir() if entry.is_dir()]
+
+
+def _reviews_canonical_rel(context: Context, entity: Path) -> Path | None:
+    meta_path = entity / "meta.toml"
+    if not meta_path.exists():
+        return None
+
+    try:
+        with meta_path.open("rb") as f:
+            data = tomllib.load(f)
+        review = Review.from_dict(data)
+    except Exception:
+        return None
+
+    root = _reviews_dir(context)
+    expected = _review_id(review.date, review.period)
+    return root / expected
+
+
+_reviews_domain = Domain(
+    finder=_reviews_finder,
+    checks=[
+        MetaReadable(),
+        MetaSchema(),
+        CanonicalLocation(
+            canonical_rel=_reviews_canonical_rel,
+            root_resolver=_reviews_dir,
+        ),
+    ],
+)
+
+
 # ---------------------------------------------------------------------------
 # lint / fix
 # ---------------------------------------------------------------------------
 
 
-def lint_reviews(context: Context) -> list[str]:
-    issues: list[str] = []
-    root = _reviews_dir(context)
-
-    if not root.exists():
-        issues.append("Reviews directory does not exist")
-        return issues
-
-    for entry in root.iterdir():
-        if not entry.is_dir():
-            continue
-
-        meta_path = entry / "meta.toml"
-        if not meta_path.exists():
-            issues.append(f"Missing meta.toml in {entry.name}")
-            continue
-
-        try:
-            with meta_path.open("rb") as f:
-                data = tomllib.load(f)
-            review = Review.from_dict(data)
-        except Exception:
-            issues.append(f"Invalid meta.toml in {entry.name}")
-            continue
-
-        expected_name = _review_id(review.date, review.period)
-
-        if entry.name != expected_name:
-            issues.append(f"Review '{entry.name}' should be '{expected_name}'")
-
-    return issues
+def lint_reviews(context: Context) -> list[Finding]:
+    return lint_domain(context, _reviews_domain)
 
 
-def fix_reviews(context: Context) -> list[str]:
-    actions: list[str] = []
-    root = _reviews_dir(context)
-
-    if not root.exists():
-        root.mkdir(parents=True, exist_ok=True)
-        actions.append("Created reviews directory")
-        return actions
-
-    for entry in root.iterdir():
-        if not entry.is_dir():
-            continue
-
-        meta_path = entry / "meta.toml"
-        if not meta_path.exists():
-            continue
-
-        try:
-            with meta_path.open("rb") as f:
-                data = tomllib.load(f)
-            review = Review.from_dict(data)
-        except Exception:
-            continue
-
-        expected_rel = Path(_review_id(review.date, review.period))
-
-        if is_canonical_location(root, entry, expected_rel):
-            continue
-
-        new_path = rename_to_canonical(root, entry, expected_rel)
-        actions.append(f"Moved {entry.name} → {new_path.name}")
-
-    return actions
+def fix_reviews(context: Context) -> list[FixResult]:
+    return fix_domain(context, _reviews_domain)

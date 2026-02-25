@@ -6,9 +6,13 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
+from level.checks.base import Finding, FixResult
+from level.checks.canonical_location import CanonicalLocation
+from level.checks.meta_readable import MetaReadable
+from level.checks.meta_schema import MetaSchema
 from level.config import Context
 from level.core.canonical import build_slug
-from level.core.doctor import CanonicalDomain, fix_domain, lint_domain
+from level.core.doctor import Domain, fix_domain, lint_domain
 from level.core.meta import write_meta_toml
 from level.templates.loader import TemplateNotFoundError
 from level.templates.renderer import render_template_to_path
@@ -136,16 +140,22 @@ def _practice_canonical_rel(context: Context, entity: Path) -> Path | None:
     return root / expected_slug
 
 
-_practice_domain = CanonicalDomain(
+_practice_domain = Domain(
     finder=_practice_finder,
-    canonical_rel=_practice_canonical_rel,
-    root_resolver=_practice_root,
+    checks=[
+        MetaReadable(),
+        MetaSchema(),
+        CanonicalLocation(
+            canonical_rel=_practice_canonical_rel,
+            root_resolver=_practice_root,
+        ),
+    ],
 )
 
 
-def lint_practice(context: Context) -> list[str]:
+def lint_practice(context: Context) -> list[Finding]:
     return lint_domain(context, _practice_domain)
 
 
-def fix_practice(context: Context) -> list[str]:
+def fix_practice(context: Context) -> list[FixResult]:
     return fix_domain(context, _practice_domain)

@@ -5,7 +5,9 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
+from level.checks.base import Check, Finding, FixResult
 from level.config import Context, get_data_root
+from level.core.doctor import Domain, fix_domain, lint_domain
 from level.core.meta import write_meta_toml
 
 # ---------------------------------------------------------------------------
@@ -222,101 +224,93 @@ def _default_plan() -> Plan:
 # ---------------------------------------------------------------------------
 
 
-def lint_plan(context: Context) -> list[str]:
-    issues: list[str] = []
-    root = _plan_root(context)
+class PlanMetaExists(Check):
+    name = "plan_meta_exists"
 
-    if not root.exists():
-        issues.append("Plan directory does not exist")
-        return issues
+    def lint(self, context: Context, entity: Path) -> list[Finding]:
+        meta_path = _plan_meta_path(context)
+        if not meta_path.exists():
+            return [Finding("meta.toml is missing", fixable=True)]
+        return []
 
-    meta_path = _plan_meta_path(context)
+    def fix(self, context: Context, entity: Path) -> list[FixResult]:
+        save_plan(context, _default_plan())
+        return [
+            FixResult(
+                entity=_plan_root(context),
+                check_name=self.name,
+                message="Created meta.toml for plan",
+            )
+        ]
 
-    if not meta_path.exists():
-        issues.append("meta.toml is missing")
-        return issues
 
-    try:
+class PlanMetaValid(Check):
+    name = "plan_meta_valid"
+
+    def lint(self, context: Context, entity: Path) -> list[Finding]:
+        try:
+            plan = load_plan(context)
+        except Exception:
+            return [Finding("meta.toml could not be parsed", fixable=True)]
+
+        if plan is None:
+            return [Finding("meta.toml is invalid", fixable=True)]
+
+        return []
+
+    def fix(self, context: Context, entity: Path) -> list[FixResult]:
+        save_plan(context, _default_plan())
+        return [
+            FixResult(
+                entity=_plan_root(context),
+                check_name=self.name,
+                message="Recreated invalid meta.toml",
+            )
+        ]
+
+
+class PlanMetaNormalize(Check):
+    name = "plan_meta_normalize"
+
+    def lint(self, context: Context, entity: Path) -> list[Finding]:
         plan = load_plan(context)
-    except Exception:
-        issues.append("meta.toml could not be parsed")
-        return issues
+        if plan is None:
+            return []
+        # Always considered normalizable
+        return []
 
-    if plan is None:
-        issues.append("meta.toml is invalid")
-        return issues
-
-    # Validate list fields
-    for name in [
-        "target_roles",
-        "target_industries",
-        "target_locations",
-        "work_modes",
-        "target_company_stages",
-    ]:
-        value = getattr(plan, name)
-        if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
-            issues.append(f"{name} must be a list of strings")
-
-    # Validate numeric fields
-    if plan.target_total_comp_min is not None and not isinstance(
-        plan.target_total_comp_min, int
-    ):
-        issues.append("target_total_comp_min must be an integer")
-
-    if plan.target_total_comp_max is not None and not isinstance(
-        plan.target_total_comp_max, int
-    ):
-        issues.append("target_total_comp_max must be an integer")
-
-    if plan.horizon_years is not None and not isinstance(plan.horizon_years, int):
-        issues.append("horizon_years must be an integer")
-
-    # Validate currency
-    if plan.comp_currency:
-        if (
-            not isinstance(plan.comp_currency, str)
-            or len(plan.comp_currency) != 3
-            or not plan.comp_currency.isupper()
-        ):
-            issues.append("comp_currency must be a 3-letter uppercase currency code")
-
-    # Validate preferred_track
-    if plan.preferred_track:
-        if plan.preferred_track not in {"IC", "EM", "Both"}:
-            issues.append("preferred_track must be one of: IC, EM, Both")
-
-    # Validate risk_tolerance
-    if plan.risk_tolerance:
-        if plan.risk_tolerance not in {"low", "medium", "high"}:
-            issues.append("risk_tolerance must be one of: low, medium, high")
-
-    # Validate date
-    if plan.last_reviewed is not None and not isinstance(plan.last_reviewed, date):
-        issues.append("last_reviewed must be a valid date")
-
-    return issues
+    def fix(self, context: Context, entity: Path) -> list[FixResult]:
+        plan = load_plan(context)
+        if plan is None:
+            return []
+        save_plan(context, plan)
+        return [
+            FixResult(
+                entity=_plan_root(context),
+                check_name=self.name,
+                message="Normalized plan meta.toml structure",
+            )
+        ]
 
 
-def fix_plan(context: Context) -> list[str]:
-    actions: list[str] = []
-    root = _plan_root(context)
-    root.mkdir(parents=True, exist_ok=True)
+def _plan_finder(context: Context) -> list[Path]:
+    # Plan is singleton; entity concept is root directory
+    return [_plan_root(context)]
 
-    meta_path = _plan_meta_path(context)
 
-    if not meta_path.exists():
-        save_plan(context, _default_plan())
-        actions.append("Created meta.toml for plan")
-        return actions
+_plan_domain = Domain(
+    finder=_plan_finder,
+    checks=[
+        PlanMetaExists(),
+        PlanMetaValid(),
+        PlanMetaNormalize(),
+    ],
+)
 
-    plan = load_plan(context)
-    if plan is None:
-        save_plan(context, _default_plan())
-        actions.append("Recreated invalid meta.toml")
-        return actions
 
-    save_plan(context, plan)
-    actions.append("Normalized plan meta.toml structure")
+def lint_plan(context: Context) -> list[Finding]:
+    return lint_domain(context, _plan_domain)
 
-    return actions
+
+def fix_plan(context: Context) -> list[FixResult]:
+    return fix_domain(context, _plan_domain)

@@ -4,17 +4,11 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
+from level.checks.base import Check, Finding, FixResult
 from level.config import Context
 
 Entity = Path
 Finder = Callable[[Context], Iterable[Entity]]
-
-
-# A Check encapsulates lint + fix behavior for a single invariant.
-@dataclass
-class Check:
-    lint: Callable[[Context, Entity], list[str]]
-    fix: Callable[[Context, Entity], list[str]]
 
 
 @dataclass
@@ -31,23 +25,32 @@ class Domain:
     checks: list[Check]
 
 
-def lint_domain(context: Context, domain: Domain) -> list[str]:
-    issues: list[str] = []
+def lint_domain(context: Context, domain: Domain) -> list[Finding]:
+    issues: list[Finding] = []
 
     for entity in domain.finder(context):
         for check in domain.checks:
-            results = check.lint(context, entity)
-            if results:
-                issues.extend(results)
+            findings = check.lint(context, entity)
+            for finding in findings:
+                issues.append(finding)
 
     return issues
 
 
-def fix_domain(context: Context, domain: Domain) -> list[str]:
-    actions: list[str] = []
+def fix_domain(context: Context, domain: Domain) -> list[FixResult]:
+    actions: list[FixResult] = []
 
     for entity in domain.finder(context):
         for check in domain.checks:
+            if not check.supports_fix():
+                continue
+
+            findings = check.lint(context, entity)
+
+            # Only attempt fix if there are fixable findings
+            if not any(f.fixable for f in findings):
+                continue
+
             results = check.fix(context, entity)
             if results:
                 actions.extend(results)
