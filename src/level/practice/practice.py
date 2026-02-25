@@ -11,7 +11,7 @@ from level.checks.canonical_location import CanonicalLocation
 from level.checks.meta_readable import MetaReadable
 from level.checks.meta_schema import MetaSchema
 from level.config import Context
-from level.core.canonical import build_slug
+from level.core.canonical import build_slug, resolve_collision
 from level.core.doctor import Domain, fix_domain, lint_domain
 from level.core.meta import write_meta_toml
 from level.templates.loader import TemplateNotFoundError
@@ -44,15 +44,9 @@ def create_practice(
     root = _practice_root(context)
 
     base_slug = _practice_slug(practice_date, name)
-    slug = base_slug
-    counter = 1
-
-    # Handle collisions by appending numeric suffix
-    while (root / slug).exists():
-        slug = f"{base_slug}-{counter}"
-        counter += 1
-
-    practice_dir = root / slug
+    base_rel = Path(base_slug)
+    practice_dir = resolve_collision(root, base_rel)
+    slug = practice_dir.name
     practice_dir.mkdir(parents=True, exist_ok=False)
 
     # Write meta.toml

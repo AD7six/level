@@ -11,7 +11,7 @@ from level.checks.canonical_location import CanonicalLocation
 from level.checks.meta_readable import MetaReadable
 from level.checks.meta_schema import MetaSchema
 from level.config import Context, get_data_root
-from level.core.canonical import build_slug
+from level.core.canonical import build_slug, resolve_collision
 from level.core.doctor import Domain, fix_domain, lint_domain
 from level.core.meta import write_meta_toml
 from level.templates.renderer import render_template_directory
@@ -91,36 +91,6 @@ def _canonical_rel_path(state: str, meta: ApplicationMeta) -> Path:
     return Path(state) / _canonical_slug_from_meta(meta)
 
 
-def _resolve_target_path(
-    context: Context,
-    state: str,
-    meta: ApplicationMeta,
-    current_path: Path | None = None,
-) -> Path:
-    """
-    Resolve a usable filesystem path for an application.
-
-    - Uses canonical slug
-    - Appends numeric suffix if collision occurs
-    - Ignores collision with current_path (for fix operations)
-    """
-    root = _applications_root(context)
-    base_rel = _canonical_rel_path(state, meta)
-    target = root / base_rel
-
-    if current_path is not None and current_path == target:
-        return target
-
-    final_target = target
-    counter = 1
-
-    while final_target.exists() and final_target != current_path:
-        final_target = target.parent / f"{target.name}-{counter}"
-        counter += 1
-
-    return final_target
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -184,7 +154,9 @@ def create_application(
         created_at=date,
     )
 
-    path = _resolve_target_path(context, "drafts", meta)
+    root = _applications_root(context)
+    base_rel = _canonical_rel_path("drafts", meta)
+    path = resolve_collision(root, base_rel)
     slug = path.name
 
     if path.exists():
@@ -297,10 +269,11 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
     raw = _load_meta(app.path)
     meta = ApplicationMeta.from_dict(raw)
 
-    target = _resolve_target_path(
-        context,
-        new_state,
-        meta,
+    root = _applications_root(context)
+    base_rel = _canonical_rel_path(new_state, meta)
+    target = resolve_collision(
+        root,
+        base_rel,
         current_path=app.path,
     )
 

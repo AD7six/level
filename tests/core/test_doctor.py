@@ -1,9 +1,8 @@
 from pathlib import Path
 
-from level.config import Config, Context
-from level.core.doctor import Domain, lint_domain, fix_domain
 from level.checks.base import Check, Finding
-from level.core.doctor import FixResult
+from level.config import Config, Context
+from level.core.doctor import Domain, FixResult, fix_domain, lint_domain
 
 
 class DummyCheck(Check):

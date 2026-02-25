@@ -2,7 +2,11 @@ from collections.abc import Callable
 from pathlib import Path
 
 from level.config import Context
-from level.core.canonical import rename_to_canonical
+from level.core.canonical import (
+    is_valid_suffixed_slug,
+    rename_to_canonical,
+    resolve_collision,
+)
 
 from .base import Check, Finding, FixResult
 
@@ -26,7 +30,15 @@ class CanonicalLocation(Check):
         if expected is None:
             return []
 
+        base = expected.name
+        name = entity.name
+
+        # Exact canonical match
         if entity.resolve() == expected.resolve():
+            return []
+
+        # Allow valid numeric suffixes
+        if is_valid_suffixed_slug(base, name):
             return []
 
         return [
@@ -41,15 +53,20 @@ class CanonicalLocation(Check):
         if expected is None:
             return []
 
-        if entity.resolve() == expected.resolve():
+        base = expected.name
+        name = entity.name
+
+        # Already canonical or valid suffixed
+        if entity.resolve() == expected.resolve() or is_valid_suffixed_slug(base, name):
             return []
 
         root = self._root_resolver(context)
-        new_path = rename_to_canonical(root, entity, Path(expected.name))
+        target = resolve_collision(root, Path(expected.name), current_path=entity)
+        new_path = rename_to_canonical(root, entity, Path(target.name))
 
         return [
             FixResult(
-                entity=entity,
+                entity=new_path,
                 check_name=self.name,
                 message=f"Renamed {entity.name} -> {new_path.name}",
             )
