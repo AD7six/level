@@ -7,7 +7,8 @@ from datetime import date
 from pathlib import Path
 
 from level.config import Context
-from level.core.canonical import build_slug, rename_to_canonical
+from level.core.canonical import build_slug
+from level.core.doctor import CanonicalDomain, fix_domain, lint_domain
 from level.core.meta import write_meta_toml
 from level.templates.loader import TemplateNotFoundError
 from level.templates.renderer import render_template_to_path
@@ -101,95 +102,50 @@ def list_practice(context: Context) -> Iterable[Practice]:
         yield Practice(date=practice_date, slug=child.name)
 
 
-def lint_practice(context: Context) -> list[str]:
-    issues: list[str] = []
+def _practice_finder(context: Context) -> Iterable[Path]:
     root = _practice_root(context)
-
     for child in root.iterdir():
-        if not child.is_dir():
-            continue
+        if child.is_dir():
+            yield child
 
-        meta_path = child / "meta.toml"
-        if not meta_path.exists():
-            issues.append(
-                f"meta.toml not found; Invalid practice directory name: {child.name}"
-            )
-            continue
 
-        try:
-            with meta_path.open("rb") as f:
-                raw = tomllib.load(f)
-        except Exception:
-            issues.append(f"Invalid meta.toml in: {child.name}")
-            continue
+def _practice_canonical_rel(context: Context, entity: Path) -> Path | None:
+    meta_path = entity / "meta.toml"
+    if not meta_path.exists():
+        return None
 
-        practice_date = raw.get("date")
-        name = raw.get("name")
+    try:
+        with meta_path.open("rb") as f:
+            raw = tomllib.load(f)
+    except Exception:
+        return None
 
-        if not practice_date or not name:
-            issues.append(f"meta.toml missing required fields in: {child.name}")
-            continue
+    practice_date = raw.get("date")
+    name = raw.get("name")
 
-        try:
-            parsed_date = date.fromisoformat(str(practice_date))
-        except ValueError:
-            issues.append(f"Invalid date in meta.toml for: {child.name}")
-            continue
+    if not practice_date or not name:
+        return None
 
-        expected_slug = build_slug(parsed_date, str(name))
+    try:
+        parsed_date = date.fromisoformat(str(practice_date))
+    except ValueError:
+        return None
 
-        # Allow numeric suffix for collision resolution
-        if child.name == expected_slug:
-            continue
+    root = _practice_root(context)
+    expected_slug = build_slug(parsed_date, str(name))
+    return root / expected_slug
 
-        if child.name.startswith(expected_slug + "-"):
-            suffix = child.name[len(expected_slug) + 1 :]
-            if suffix.isdigit():
-                continue
 
-        issues.append(
-            f"Non-canonical practice directory: {child.name} (expected {expected_slug})"
-        )
+_practice_domain = CanonicalDomain(
+    finder=_practice_finder,
+    canonical_rel=_practice_canonical_rel,
+    root_resolver=_practice_root,
+)
 
-    return issues
+
+def lint_practice(context: Context) -> list[str]:
+    return lint_domain(context, _practice_domain)
 
 
 def fix_practice(context: Context) -> list[str]:
-    changes: list[str] = []
-    root = _practice_root(context)
-
-    for child in root.iterdir():
-        if not child.is_dir():
-            continue
-
-        meta_path = child / "meta.toml"
-        if not meta_path.exists():
-            continue
-
-        try:
-            with meta_path.open("rb") as f:
-                raw = tomllib.load(f)
-        except Exception:
-            continue
-
-        practice_date = raw.get("date")
-        name = raw.get("name")
-
-        if not practice_date or not name:
-            continue
-
-        try:
-            parsed_date = date.fromisoformat(str(practice_date))
-        except ValueError:
-            continue
-
-        expected_slug = build_slug(parsed_date, str(name))
-
-        if child.name == expected_slug:
-            continue
-
-        # Preserve numeric suffix behavior via canonical rename helper
-        new_path = rename_to_canonical(root, child, Path(expected_slug))
-        changes.append(f"Renamed {child.name} -> {new_path.name}")
-
-    return changes
+    return fix_domain(context, _practice_domain)

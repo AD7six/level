@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from level.config import Config, Context
-from level.core.doctor import DomainDoctor, fix_domain, lint_domain
+from level.core.doctor import CanonicalDomain, fix_domain, lint_domain
 
 
 def _context(tmp_path: Path) -> Context:
@@ -12,91 +12,80 @@ def _context(tmp_path: Path) -> Context:
     )
 
 
-def test_lint_domain_runs_all_linters(tmp_path):
+def test_lint_domain_detects_non_canonical(tmp_path):
     context = _context(tmp_path)
 
-    entities = [tmp_path / "a", tmp_path / "b"]
-    for e in entities:
-        e.mkdir()
+    root = tmp_path / "domain"
+    root.mkdir()
+
+    wrong = root / "wrong"
+    wrong.mkdir()
 
     def finder(ctx):
-        return entities
+        return [wrong]
 
-    def l1(ctx, entity):
-        return [f"l1:{entity.name}"]
+    def canonical_rel(ctx, entity):
+        return root / "expected"
 
-    def l2(ctx, entity):
-        return [f"l2:{entity.name}"]
+    domain = CanonicalDomain(
+        finder=finder,
+        canonical_rel=canonical_rel,
+        root_resolver=lambda ctx: root,
+    )
 
-    doctor = DomainDoctor(finder=finder, linters=[l1, l2], fixers=[])
+    issues = lint_domain(context, domain)
 
-    issues = lint_domain(context, doctor)
-
-    assert issues == [
-        "l1:a",
-        "l2:a",
-        "l1:b",
-        "l2:b",
-    ]
+    assert issues == ["Non-canonical directory: wrong (expected expected)"]
 
 
-def test_fix_domain_runs_all_fixers(tmp_path):
+def test_fix_domain_renames_to_canonical(tmp_path):
     context = _context(tmp_path)
 
-    entities = [tmp_path / "x"]
-    entities[0].mkdir()
+    root = tmp_path / "domain"
+    root.mkdir()
+
+    wrong = root / "wrong"
+    wrong.mkdir()
 
     def finder(ctx):
-        return entities
+        return [wrong]
 
-    def f1(ctx, entity):
-        return [f"f1:{entity.name}"]
+    def canonical_rel(ctx, entity):
+        return root / "expected"
 
-    def f2(ctx, entity):
-        return [f"f2:{entity.name}"]
+    domain = CanonicalDomain(
+        finder=finder,
+        canonical_rel=canonical_rel,
+        root_resolver=lambda ctx: root,
+    )
 
-    doctor = DomainDoctor(finder=finder, linters=[], fixers=[f1, f2])
+    actions = fix_domain(context, domain)
 
-    actions = fix_domain(context, doctor)
+    assert actions == ["Renamed wrong -> expected"]
+    assert (root / "expected").exists()
 
-    assert actions == ["f1:x", "f2:x"]
 
-
-def test_lint_domain_handles_linter_exception(tmp_path):
+def test_lint_domain_ignores_canonical(tmp_path):
     context = _context(tmp_path)
 
-    entity = tmp_path / "e"
-    entity.mkdir()
+    root = tmp_path / "domain"
+    root.mkdir()
+
+    correct = root / "expected"
+    correct.mkdir()
 
     def finder(ctx):
-        return [entity]
+        return [correct]
 
-    def bad_linter(ctx, entity):
-        raise RuntimeError("boom")
+    def canonical_rel(ctx, entity):
+        return root / "expected"
 
-    doctor = DomainDoctor(finder=finder, linters=[bad_linter], fixers=[])
+    domain = CanonicalDomain(
+        finder=finder,
+        canonical_rel=canonical_rel,
+        root_resolver=lambda ctx: root,
+    )
 
-    issues = lint_domain(context, doctor)
+    issues = lint_domain(context, domain)
 
-    assert len(issues) == 1
-    assert "Linter error" in issues[0]
-
-
-def test_fix_domain_handles_fixer_exception(tmp_path):
-    context = _context(tmp_path)
-
-    entity = tmp_path / "e"
-    entity.mkdir()
-
-    def finder(ctx):
-        return [entity]
-
-    def bad_fixer(ctx, entity):
-        raise RuntimeError("boom")
-
-    doctor = DomainDoctor(finder=finder, linters=[], fixers=[bad_fixer])
-
-    actions = fix_domain(context, doctor)
-
-    assert len(actions) == 1
-    assert "Fixer error" in actions[0]
+    assert issues == []

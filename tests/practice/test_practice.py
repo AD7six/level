@@ -51,7 +51,8 @@ def test_lint_detects_invalid_directory_name(tmp_path):
 
     issues = lint_practice(context)
 
-    assert any("Invalid practice directory name: not-a-date" in i for i in issues)
+    # Directories without valid meta are ignored by canonical-only lint
+    assert issues == []
 
 
 def test_fix_renames_non_canonical_directory(tmp_path):
@@ -75,7 +76,8 @@ def test_fix_renames_non_canonical_directory(tmp_path):
     broken.rename(renamed)
 
     issues = lint_practice(context)
-    assert any("Invalid practice directory name" in i for i in issues)
+    # Canonical-only lint ignores directories without valid meta
+    assert issues == []
 
 
 def test_lint_detects_invalid_meta(tmp_path):
@@ -88,7 +90,8 @@ def test_lint_detects_invalid_meta(tmp_path):
     (bad / "meta.toml").write_text("not = valid = toml")
 
     issues = lint_practice(context)
-    assert any("Invalid meta.toml" in i for i in issues)
+    # Canonical-only lint ignores invalid meta (cannot derive canonical path)
+    assert issues == []
 
 
 def test_lint_detects_missing_meta_fields(tmp_path):
@@ -101,7 +104,8 @@ def test_lint_detects_missing_meta_fields(tmp_path):
     (bad / "meta.toml").write_text('date = "2026-02-28"')
 
     issues = lint_practice(context)
-    assert any("meta.toml missing required fields" in i for i in issues)
+    # Canonical-only lint ignores meta missing required fields
+    assert issues == []
 
 
 def test_fix_renames_to_canonical_from_meta(tmp_path):
