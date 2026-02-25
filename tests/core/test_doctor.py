@@ -1,7 +1,29 @@
 from pathlib import Path
 
 from level.config import Config, Context
-from level.core.doctor import CanonicalDomain, fix_domain, lint_domain
+from level.core.doctor import Domain, lint_domain, fix_domain
+from level.checks.base import Check, Finding
+from level.core.doctor import FixResult
+
+
+class DummyCheck(Check):
+    name = "dummy"
+
+    def lint(self, context: Context, entity: Path) -> list[Finding]:
+        if entity.name == "wrong":
+            return [Finding("wrong name", fixable=True)]
+        return []
+
+    def fix(self, context: Context, entity: Path) -> list[FixResult]:
+        new_path = entity.parent / "expected"
+        entity.rename(new_path)
+        return [
+            FixResult(
+                entity=new_path,
+                check_name=self.name,
+                message="Renamed wrong -> expected",
+            )
+        ]
 
 
 def _context(tmp_path: Path) -> Context:
@@ -12,7 +34,7 @@ def _context(tmp_path: Path) -> Context:
     )
 
 
-def test_lint_domain_detects_non_canonical(tmp_path):
+def test_lint_domain_detects_issue(tmp_path):
     context = _context(tmp_path)
 
     root = tmp_path / "domain"
@@ -21,24 +43,18 @@ def test_lint_domain_detects_non_canonical(tmp_path):
     wrong = root / "wrong"
     wrong.mkdir()
 
-    def finder(ctx):
-        return [wrong]
-
-    def canonical_rel(ctx, entity):
-        return root / "expected"
-
-    domain = CanonicalDomain(
-        finder=finder,
-        canonical_rel=canonical_rel,
-        root_resolver=lambda ctx: root,
+    domain = Domain(
+        finder=lambda ctx: [wrong],
+        checks=[DummyCheck()],
     )
 
-    issues = lint_domain(context, domain)
+    findings = lint_domain(context, domain)
 
-    assert issues == ["Non-canonical directory: wrong (expected expected)"]
+    assert len(findings) == 1
+    assert findings[0].message == "wrong name"
 
 
-def test_fix_domain_renames_to_canonical(tmp_path):
+def test_fix_domain_applies_fix(tmp_path):
     context = _context(tmp_path)
 
     root = tmp_path / "domain"
@@ -47,25 +63,19 @@ def test_fix_domain_renames_to_canonical(tmp_path):
     wrong = root / "wrong"
     wrong.mkdir()
 
-    def finder(ctx):
-        return [wrong]
-
-    def canonical_rel(ctx, entity):
-        return root / "expected"
-
-    domain = CanonicalDomain(
-        finder=finder,
-        canonical_rel=canonical_rel,
-        root_resolver=lambda ctx: root,
+    domain = Domain(
+        finder=lambda ctx: [wrong],
+        checks=[DummyCheck()],
     )
 
-    actions = fix_domain(context, domain)
+    results = fix_domain(context, domain)
 
-    assert actions == ["Renamed wrong -> expected"]
+    assert len(results) == 1
+    assert results[0].message == "Renamed wrong -> expected"
     assert (root / "expected").exists()
 
 
-def test_lint_domain_ignores_canonical(tmp_path):
+def test_lint_domain_no_issue(tmp_path):
     context = _context(tmp_path)
 
     root = tmp_path / "domain"
@@ -74,18 +84,11 @@ def test_lint_domain_ignores_canonical(tmp_path):
     correct = root / "expected"
     correct.mkdir()
 
-    def finder(ctx):
-        return [correct]
-
-    def canonical_rel(ctx, entity):
-        return root / "expected"
-
-    domain = CanonicalDomain(
-        finder=finder,
-        canonical_rel=canonical_rel,
-        root_resolver=lambda ctx: root,
+    domain = Domain(
+        finder=lambda ctx: [correct],
+        checks=[DummyCheck()],
     )
 
-    issues = lint_domain(context, domain)
+    findings = lint_domain(context, domain)
 
-    assert issues == []
+    assert findings == []
