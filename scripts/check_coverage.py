@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-TOLERANCE = 0.01  # 1% tolerance for coverage decrease
+TOLERANCE = 1.0  # 1% tolerance for coverage decrease
 
 
 def load_percent(path: Path) -> tuple[bool, float, str | None]:
