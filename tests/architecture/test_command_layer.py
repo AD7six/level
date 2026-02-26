@@ -26,17 +26,22 @@ def test_commands_do_not_use_loops_or_comprehensions() -> None:
     No loops or comprehensions allowed in command files.
     """
     for file in COMMANDS_DIR.glob("*.py"):
+        domain = file.stem
         tree = _parse(file)
 
         for node in ast.walk(tree):
             if isinstance(node, (ast.For, ast.While)):
                 pytest.fail(
-                    f"{file.name} contains loop logic. Move iteration/aggregation into the appropriate domain module (level.domains.<x>) as a function and call that from the command."
+                    f"{file.name} contains loop logic. Move iteration/"
+                    f"aggregation into level.domains.{domain} as a function "
+                    "and call it from the command."
                 )
 
             if isinstance(node, (ast.ListComp, ast.DictComp, ast.SetComp)):
                 pytest.fail(
-                    f"{file.name} contains comprehension logic. Implement this data processing inside level.domains.<x> and expose it as a function, then call it from the command layer."
+                    f"{file.name} contains comprehension logic. "
+                    f"Implement this inside level.domains.{domain} and "
+                    "expose it as a function, then call it from the command."
                 )
 
 
@@ -46,24 +51,28 @@ def test_commands_do_not_aggregate_data() -> None:
     Disallow common aggregation calls.
     """
     forbidden_calls = {
-        "all"
+        "all",
         "any",
         "filter",
         "map",
         "max",
-        "min", 
-        "sorted", 
-        "sum", 
+        "min",
+        "sorted",
+        "sum",
     }
 
     for file in COMMANDS_DIR.glob("*.py"):
+        domain = file.stem
         tree = _parse(file)
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
                 if node.func.id in forbidden_calls:
                     pytest.fail(
-                        f"{file.name} uses aggregation call '{node.func.id}'. Aggregation belongs in level.domains.<x> (e.g. get_<thing>_metrics(context)). Move this logic into the domain and call it from the command."
+                        f"{file.name} uses aggregation call '{node.func.id}'. "
+                        f"Move this logic into level.domains.{domain} "
+                        "(e.g. get_{domain}_metrics(context)) and call it "
+                        "from the command."
                     )
 
 
@@ -74,6 +83,7 @@ def test_commands_do_not_import_filesystem_modules() -> None:
     forbidden_roots = {"os", "pathlib", "tomllib"}
 
     for file in COMMANDS_DIR.glob("*.py"):
+        domain = file.stem
         tree = _parse(file)
 
         for node in ast.walk(tree):
@@ -82,12 +92,18 @@ def test_commands_do_not_import_filesystem_modules() -> None:
                     root = alias.name.split(".")[0]
                     if root in forbidden_roots:
                         pytest.fail(
-                            f"{file.name} imports forbidden module '{root}'. Filesystem and parsing logic must live in level.domains.<x> or level.core, not in the command layer."
+                            f"{file.name} imports forbidden module '{root}'. "
+                            f"Filesystem logic must live in "
+                            f"level.domains.{domain} or level.core, not in "
+                            "the command layer."
                         )
 
             if isinstance(node, ast.ImportFrom) and node.module:
                 root = node.module.split(".")[0]
                 if root in forbidden_roots:
                     pytest.fail(
-                        f"{file.name} imports forbidden module '{root}'. Filesystem and parsing logic must live in level.domains.<x> or level.core, not in the command layer."
+                        f"{file.name} imports forbidden module '{root}'. "
+                        f"Filesystem logic must live in "
+                        f"level.domains.{domain} or level.core, not in "
+                        "the command layer."
                     )
