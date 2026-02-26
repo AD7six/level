@@ -110,12 +110,6 @@ def _applications_root(context: Context) -> Path:
     return get_data_root(context) / "applications"
 
 
-def _state_dir(context: Context, state: str) -> Path:
-    if state not in STATES:
-        raise ValueError(f"Invalid state: {state}")
-    return _applications_root(context) / state
-
-
 def _application_path(context: Context, slug: str) -> Path | None:
     root = _applications_root(context)
     for state in STATES:
