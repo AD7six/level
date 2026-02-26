@@ -57,16 +57,14 @@ def test_commands_do_not_use_loops_or_comprehensions() -> None:
 
         tree = _parse(file)
         source = file.read_text()
-        allow_override = "# architecture: allow" in source
 
         for node in ast.walk(tree):
             if isinstance(node, (ast.For, ast.While)):
-                if not allow_override:
-                    pytest.fail(
-                        f"{file.name} contains loop logic. Move iteration/"
-                        f"aggregation into level.domains.{domain} as a function "
-                        "and call it from the command."
-                    )
+                pytest.fail(
+                    f"{file.name} contains loop logic. Move iteration/"
+                    f"aggregation into level.domains.{domain} as a function "
+                    "and call it from the command."
+                )
 
 
 def test_commands_do_not_aggregate_data() -> None:
@@ -92,23 +90,20 @@ def test_commands_do_not_aggregate_data() -> None:
 
         tree = _parse(file)
         source = file.read_text()
-        allow_override = "# architecture: allow" in source
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
                 if node.func.id in forbidden_calls:
-                    if not allow_override:
-                        pytest.fail(
-                            f"{file.name} uses aggregation call '{node.func.id}'. "
-                            f"Expose a function in level.domains.{domain} and call it "
-                            "from the command."
-                        )
-            if isinstance(node, ast.Lambda):
-                if not allow_override:
                     pytest.fail(
-                        f"{file.name} contains lambda. Domain logic should live "
-                        f"in level.domains.{domain}."
+                        f"{file.name} uses aggregation call '{node.func.id}'. "
+                        f"Expose a function in level.domains.{domain} and call it "
+                        "from the command."
                     )
+            if isinstance(node, ast.Lambda):
+                pytest.fail(
+                    f"{file.name} contains lambda. Domain logic should live "
+                    f"in level.domains.{domain}."
+                )
 
 
 def test_commands_do_not_import_filesystem_modules() -> None:
