@@ -1,6 +1,6 @@
 import pytest
 
-from level.applications.schema import (
+from level.domains.applications.schema import (
     STATES,
     default_schema_dict,
     validate_schema,

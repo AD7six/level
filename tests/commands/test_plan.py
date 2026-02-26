@@ -6,7 +6,7 @@ from level.commands.plan import (
     handle_plan_show,
 )
 from level.config import build_context
-from level.plan.plan import Plan, save_plan
+from level.domains.plan.plan import Plan, save_plan
 
 # ---------------------------------------------------------------------------
 # helpers

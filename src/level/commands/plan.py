@@ -3,7 +3,7 @@ import subprocess
 from typing import Any
 
 from level.config import Context, get_data_root
-from level.plan.plan import (
+from level.domains.plan.plan import (
     fix_plan,
     lint_plan,
     load_plan,

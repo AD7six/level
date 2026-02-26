@@ -4,7 +4,7 @@ from datetime import date
 import pytest
 
 from level.config import build_context
-from level.reviews import reviews as review_module
+from level.domains.reviews import reviews as review_module
 
 # ---------------------------------------------------------------------------
 # helpers

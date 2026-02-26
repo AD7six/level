@@ -7,7 +7,7 @@ Responsible for registering and handling `level application` subcommands.
 import argparse
 from datetime import date, datetime
 
-from level.applications.applications import (
+from level.domains.applications.applications import (
     Application,
     create_application,
     fix_applications,
@@ -16,7 +16,7 @@ from level.applications.applications import (
     list_applications,
     move_application,
 )
-from level.applications.schema import STATES, TERMINAL_STATES
+from level.domains.applications.schema import STATES, TERMINAL_STATES
 from level.commands._doctor import make_doctor_handler
 from level.config import Context
 

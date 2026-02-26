@@ -1,6 +1,6 @@
 import argparse
 
-from level.applications.applications import create_application
+from level.domains.applications.applications import create_application
 from level.commands.application import (
     handle_application_list,
     handle_application_move,

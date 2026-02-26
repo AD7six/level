@@ -2,7 +2,7 @@ from datetime import date
 from pathlib import Path
 
 from level.config import Config, Context
-from level.practice.practice import (
+from level.domains.practice.practice import (
     create_practice,
     fix_practice,
     lint_practice,
