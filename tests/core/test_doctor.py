@@ -25,6 +25,16 @@ class DummyCheck(Check):
         ]
 
 
+class NonFixableCheck(Check):
+    name = "nonfixable"
+
+    def lint(self, context: Context, entity: Path) -> list[Finding]:
+        return [Finding("problem", fixable=False)]
+
+    def fix(self, context: Context, entity: Path):
+        raise AssertionError("fix should not be called")
+
+
 def _context(tmp_path: Path) -> Context:
     return Context(
         home=tmp_path,
@@ -91,3 +101,22 @@ def test_lint_domain_no_issue(tmp_path):
     findings = lint_domain(context, domain)
 
     assert findings == []
+
+
+def test_fix_domain_skips_non_fixable_findings(tmp_path):
+    context = _context(tmp_path)
+
+    root = tmp_path / "domain"
+    root.mkdir()
+
+    entity = root / "thing"
+    entity.mkdir()
+
+    domain = Domain(
+        finder=lambda ctx: [entity],
+        checks=[NonFixableCheck()],
+    )
+
+    results = fix_domain(context, domain)
+
+    assert results == []
