@@ -13,21 +13,36 @@ def render_list(items: list[str]) -> str:
     return "\n".join(lines)
 
 
-def render_table(rows: list[dict[str, str]], headers: list[str]) -> str:
+def render_table(rows: list[dict[str, str]], columns: dict[str, str]) -> str:
     """
     Render a list of dicts as a simple table for display.
     """
-    # Calculate column widths
-    col_widths = {h: max(len(h), *(len(row.get(h, "")) for row in rows)) for h in headers}
+    if not rows:
+        return ""
 
-    # Header row
-    header_row = " | ".join(f"{h:{col_widths[h]}}" for h in headers)
-    separator = "-+-".join("-" * col_widths[h] for h in headers)
+    keys = list(columns.keys())
+    headers = list(columns.values())
 
-    # Data rows
+    col_widths = {
+        header: max(
+            len(header),
+            *(len(str(row.get(key, ""))) for row in rows)
+        )
+        for key, header in zip(keys, headers)
+    }
+
+    header_row = " | ".join(
+        f"{header:{col_widths[header]}}"
+        for header in headers
+    )
+    separator = "-+-".join("-" * col_widths[header] for header in headers)
+
     data_rows = []
     for row in rows:
-        data_row = " | ".join(f"{row.get(h, ''):{col_widths[h]}}" for h in headers)
+        data_row = " | ".join(
+            f"{str(row.get(key, '')):{col_widths[header]}}"
+            for key, header in zip(keys, headers)
+        )
         data_rows.append(data_row)
 
     return "\n".join([header_row, separator] + data_rows)

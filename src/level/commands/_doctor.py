@@ -5,6 +5,7 @@ from collections.abc import Callable
 
 from level.checks.base import Finding, FixResult
 from level.config import Context
+from level.commands._format import render_list
 
 
 def make_doctor_handler(
@@ -17,16 +18,14 @@ def make_doctor_handler(
             results = fix_fn(context)
             if results:
                 print("Actions performed:")
-                for r in results:
-                    print(f"  - {r.message}")
+                print(render_list([r.message for r in results]))
             else:
                 print("No changes required.")
         else:
             findings = lint_fn(context)
             if findings:
                 print("Issues detected:")
-                for f in findings:
-                    print(f"  - {f.message}")
+                print(render_list([f.message for f in findings]))
 
                 if any(f.fixable for f in findings):
                     print("\nSome issues are fixable. Run with --fix to apply changes.")
