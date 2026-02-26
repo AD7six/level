@@ -1,5 +1,6 @@
 import pytest
 
+from level.config import build_context
 from level.domains.applications.applications import (
     TRANSITIONS,
     create_application,
@@ -10,7 +11,6 @@ from level.domains.applications.applications import (
     move_application,
 )
 from level.domains.applications.schema import STATES
-from level.config import build_context
 
 # ---------------------------------------------------------------------------
 # helpers

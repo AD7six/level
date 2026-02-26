@@ -1,6 +1,5 @@
 import argparse
 
-from level.domains.applications.applications import create_application
 from level.commands.application import (
     handle_application_list,
     handle_application_move,
@@ -8,6 +7,7 @@ from level.commands.application import (
     handle_application_show,
 )
 from level.config import build_context
+from level.domains.applications.applications import create_application
 
 # ---------------------------------------------------------------------------
 # helpers
