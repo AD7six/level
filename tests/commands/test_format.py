@@ -1,6 +1,9 @@
-
-
-from level.commands._format import render_dict, render_list, render_table
+from level.commands._format import (
+    render_dict,
+    render_list,
+    render_table,
+    render_kv_block,
+)
 
 
 def test_render_dict():
@@ -16,6 +19,22 @@ def test_render_list():
     output = render_list(items)
 
     assert output == " * one\n * two"
+
+
+def test_render_kv_block():
+    data = {
+        "Short": "A",
+        "Much Longer Key": "B",
+    }
+
+    output = render_kv_block(data)
+
+    expected = (
+        "Short           A\n"
+        "Much Longer Key B"
+    )
+
+    assert output == expected
 
 
 def test_render_table():

@@ -12,6 +12,16 @@ def render_list(items: list[str]) -> str:
     lines = (f" * {item}" for item in items)
     return "\n".join(lines)
 
+def render_kv_block(data: dict[str, str]) -> str:
+    """
+    Render a dict as aligned key-value pairs for display.
+    """
+    width = max(len(k) for k in data.keys())
+    lines = [
+        f"{k:<{width}}  {v}"
+        for k, v in data.items()
+    ]
+    return "\n".join(lines)
 
 def render_table(rows: list[dict[str, str]], columns: dict[str, str]) -> str:
     """
