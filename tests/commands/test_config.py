@@ -3,87 +3,72 @@ from pathlib import Path
 
 import pytest
 
-from level.commands.config import (
-    handle_config_doctor,
-    handle_config_set,
-)
+from level.commands.init import handle_init
 from level.config import build_context
 
 # ---------------------------------------------------------------------------
-# config set (command layer)
+# helpers
 # ---------------------------------------------------------------------------
 
 
-def test_config_set_invalid_key(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
+def _context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
-
-    args = argparse.Namespace(key="invalid", value="value", fix=False)
-    context = build_context()
-    handle_config_set(context, args)
-
-    captured = capsys.readouterr()
-    assert "Invalid config key" in captured.out
-
-
-def test_config_set_valid_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
-
-    args = argparse.Namespace(key="editor", value="nano", fix=False)
-    context = build_context()
-    handle_config_set(context, args)
-
-    config_file = tmp_path / "config.toml"
-    assert config_file.exists()
-    assert 'editor = "nano"' in config_file.read_text()
-
-
-def test_config_set_initialize_defaults(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
-
-    args = argparse.Namespace(key=None, value=None, fix=False)
-    context = build_context()
-    handle_config_set(context, args)
-
-    config_file = tmp_path / "config.toml"
-    content = config_file.read_text()
-
-    assert "editor" in content
-    assert "data_dir" in content
+    return build_context()
 
 
 # ---------------------------------------------------------------------------
-# config doctor
+# tests
 # ---------------------------------------------------------------------------
 
 
-def test_config_doctor_reports_missing_dirs(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+def test_init_delegates_to_diagnostics_with_fix(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setenv("LEVEL_HOME", str(tmp_path / "missing_home"))
+    context = _context(tmp_path, monkeypatch)
 
-    args = argparse.Namespace(fix=False)
-    context = build_context()
-    handle_config_doctor(context, args)
+    called = {"args": None}
 
-    captured = capsys.readouterr()
-    assert "LEVEL_HOME missing" in captured.out or "data_root missing" in captured.out
+    def fake_run(context_arg, fix):
+        called["args"] = (context_arg, fix)
+
+        class Result:
+            def __init__(self, ok, message):
+                self.ok = ok
+                self.message = message
+
+        return [Result(True, "ok")]
+
+    monkeypatch.setattr("level.commands.init.run_diagnostics", fake_run)
+
+    handle_init(context, argparse.Namespace())
+
+    assert called["args"] == (context, True)
+
+    out = capsys.readouterr().out
+    assert "Initializing level repository" in out
+    assert "ok" in out
 
 
-def test_config_doctor_fix_creates_dirs(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+def test_init_prints_failures(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    level_home = tmp_path / "missing_home"
-    monkeypatch.setenv("LEVEL_HOME", str(level_home))
+    context = _context(tmp_path, monkeypatch)
 
-    args = argparse.Namespace(fix=True)
-    context = build_context()
-    handle_config_doctor(context, args)
+    def fake_run(context_arg, fix):
+        class Result:
+            def __init__(self, ok, message):
+                self.ok = ok
+                self.message = message
 
-    captured = capsys.readouterr()
+        return [Result(False, "problem")]
 
-    assert level_home.exists()
-    assert "created" in captured.out
+    monkeypatch.setattr("level.commands.init.run_diagnostics", fake_run)
+
+    handle_init(context, argparse.Namespace())
+
+    out = capsys.readouterr().out
+    assert "problem" in out

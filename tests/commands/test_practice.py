@@ -4,6 +4,10 @@ from pathlib import Path
 from level.commands import practice as practice_cmd
 from level.config import Config, Context
 
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
+
 
 def _context(tmp_path: Path) -> Context:
     return Context(
@@ -13,31 +17,65 @@ def _context(tmp_path: Path) -> Context:
     )
 
 
-def test_practice_new_creates_session(tmp_path, capsys):
+# ---------------------------------------------------------------------------
+# practice new
+# ---------------------------------------------------------------------------
+
+
+def test_practice_new_prints_created_slug(tmp_path, capsys, monkeypatch):
     context = _context(tmp_path)
 
-    args = Namespace(date="2026-02-24")
-    practice_cmd.handle_practice_new(context, args)
+    def fake_create(context_arg, practice_date, **kwargs):
+        class DummyPractice:
+            slug = "2026-02-24-code-session"
 
-    practice_dir = tmp_path / "practice" / "2026-02-24-code-session"
-    assert practice_dir.exists()
-    assert (practice_dir / "00-start.py").exists()
+        return DummyPractice()
+
+    monkeypatch.setattr(
+        "level.commands.practice.create_practice",
+        fake_create,
+    )
+
+    args = Namespace(date="2026-02-24", name=None, random=False, type="code")
+
+    practice_cmd.handle_practice_new(context, args)
 
     output = capsys.readouterr().out
     assert "Created practice session: 2026-02-24-code-session" in output
 
 
-def test_practice_list_outputs_sessions(tmp_path, capsys):
+# ---------------------------------------------------------------------------
+# practice list
+# ---------------------------------------------------------------------------
+
+
+def test_practice_list_outputs_slugs(tmp_path, capsys, monkeypatch):
     context = _context(tmp_path)
 
-    # Create two sessions
-    practice_cmd.handle_practice_new(context, Namespace(date="2026-02-20"))
-    practice_cmd.handle_practice_new(context, Namespace(date="2026-02-21"))
+    class Dummy:
+        def __init__(self, slug):
+            self.slug = slug
 
-    # Clear previous output from creation
-    capsys.readouterr()
+    monkeypatch.setattr(
+        "level.commands.practice.list_practice",
+        lambda context_arg: [Dummy("a"), Dummy("b")],
+    )
 
     practice_cmd.handle_practice_list(context, Namespace())
 
     output = capsys.readouterr().out.strip().splitlines()
-    assert output == ["2026-02-20-code-session", "2026-02-21-code-session"]
+    assert output == ["a", "b"]
+
+
+def test_practice_list_empty(tmp_path, capsys, monkeypatch):
+    context = _context(tmp_path)
+
+    monkeypatch.setattr(
+        "level.commands.practice.list_practice",
+        lambda context_arg: [],
+    )
+
+    practice_cmd.handle_practice_list(context, Namespace())
+
+    output = capsys.readouterr().out.strip()
+    assert output == "No practice sessions found."

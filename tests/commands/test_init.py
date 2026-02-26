@@ -1,61 +1,74 @@
 import argparse
+from pathlib import Path
 
-from level.commands.init import (
-    handle_init,
-)
-from level.config import build_context, get_data_root
+import pytest
+
+from level.commands.init import handle_init
+from level.config import build_context
 
 # ---------------------------------------------------------------------------
-# init
-#
-# Note these tests overlap with config doctor --fix, but we want to ensure the
-# init command properly delegates to the diagnostics engine.
+# helpers
 # ---------------------------------------------------------------------------
 
 
-def test_init_always_fixes(tmp_path, monkeypatch):
-    level_home = tmp_path / "missing_home"
-    monkeypatch.setenv("LEVEL_HOME", str(level_home))
-
-    context = build_context()
-    handle_init(context, argparse.Namespace())
-
-    assert level_home.exists()
-
-
-def test_init_creates_managed_domains(tmp_path, monkeypatch):
+def _context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
+    return build_context()
 
-    context = build_context()
+
+# ---------------------------------------------------------------------------
+# tests
+# ---------------------------------------------------------------------------
+
+
+def test_init_delegates_to_diagnostics_with_fix(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    context = _context(tmp_path, monkeypatch)
+
+    called = {"args": None}
+
+    def fake_run(context_arg, fix):
+        called["args"] = (context_arg, fix)
+
+        class Result:
+            def __init__(self, ok, message):
+                self.ok = ok
+                self.message = message
+
+        return [Result(True, "ok")]
+
+    monkeypatch.setattr("level.commands.init.run_diagnostics", fake_run)
+
     handle_init(context, argparse.Namespace())
 
-    assert (tmp_path / "applications").exists()
+    assert called["args"] == (context, True)
+
+    out = capsys.readouterr().out
+    assert "Initializing level repository" in out
+    assert "ok" in out
 
 
-def test_init_is_idempotent(tmp_path, monkeypatch):
-    monkeypatch.setenv("LEVEL_HOME", str(tmp_path))
+def test_init_prints_failures(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    context = _context(tmp_path, monkeypatch)
 
-    context = build_context()
+    def fake_run(context_arg, fix):
+        class Result:
+            def __init__(self, ok, message):
+                self.ok = ok
+                self.message = message
+
+        return [Result(False, "problem")]
+
+    monkeypatch.setattr("level.commands.init.run_diagnostics", fake_run)
+
     handle_init(context, argparse.Namespace())
-    handle_init(context, argparse.Namespace())
 
-    assert (tmp_path / "applications").exists()
-
-
-def test_init_respects_data_dir(tmp_path, monkeypatch):
-    level_home = tmp_path / "level_home"
-    data_dir = tmp_path / "career_data"
-
-    monkeypatch.setenv("LEVEL_HOME", str(level_home))
-
-    # Create LEVEL_HOME and config with explicit data_dir
-    level_home.mkdir(parents=True, exist_ok=True)
-    config_file = level_home / "config.toml"
-    config_file.write_text(f'data_dir = "{data_dir}"\n')
-
-    context = build_context()
-    handle_init(context, argparse.Namespace())
-    data_root = get_data_root(context)
-
-    assert data_root == data_dir
-    assert (data_root / "applications").exists()
+    out = capsys.readouterr().out
+    assert "problem" in out

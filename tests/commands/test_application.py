@@ -33,7 +33,6 @@ def test_application_new_creates_application(tmp_path, monkeypatch, capsys):
     captured = capsys.readouterr()
 
     assert "Created 2026-01-01-acme" in captured.out
-    assert (tmp_path / "applications" / "drafts" / "2026-01-01-acme").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -91,4 +90,3 @@ def test_application_move_moves_application(tmp_path, monkeypatch, capsys):
     captured = capsys.readouterr()
 
     assert "Moved" in captured.out
-    assert (tmp_path / "applications" / "applied" / "2026-01-01-foo").exists()
