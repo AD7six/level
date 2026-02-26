@@ -223,6 +223,8 @@ def _default_plan() -> Plan:
 # Doctor
 # ---------------------------------------------------------------------------
 
+_VALID_PREFERRED_TRACKS = {"IC", "EM", "Both"}
+
 
 class PlanMetaExists(Check):
     name = "plan_meta_exists"
@@ -293,6 +295,44 @@ class PlanMetaNormalize(Check):
         ]
 
 
+class PlanMetaSchema(Check):
+    name = "plan_meta_schema"
+
+    def lint(self, context: Context, entity: Path) -> list[Finding]:
+        plan = load_plan(context)
+        if plan is None:
+            return []
+
+        findings: list[Finding] = []
+
+        if plan.comp_currency and not (
+            len(plan.comp_currency) == 3
+            and plan.comp_currency.isalpha()
+            and plan.comp_currency.isupper()
+        ):
+            findings.append(
+                Finding(
+                    "comp_currency must be a 3-letter uppercase code", fixable=False
+                )
+            )
+
+        if plan.preferred_track and plan.preferred_track not in _VALID_PREFERRED_TRACKS:
+            findings.append(
+                Finding(
+                    "preferred_track must be one of: IC, EM, Both",
+                    fixable=False,
+                )
+            )
+
+        return findings
+
+    def supports_fix(self) -> bool:
+        return False
+
+    def fix(self, context: Context, entity: Path) -> list[FixResult]:
+        return []
+
+
 def _plan_finder(context: Context) -> list[Path]:
     # Plan is singleton; entity concept is root directory
     return [_plan_root(context)]
@@ -304,6 +344,7 @@ _plan_domain = Domain(
         PlanMetaExists(),
         PlanMetaValid(),
         PlanMetaNormalize(),
+        PlanMetaSchema(),
     ],
 )
 

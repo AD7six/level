@@ -62,7 +62,7 @@ def test_review_lifecycle(tmp_path, monkeypatch, period):
 
     # Fix structure
     actions = review_module.fix_reviews(context)
-    assert any("Moved" in action for action in actions)
+    assert any("Renamed" in action.message for action in actions)
 
     # Canonical restored
     assert canonical_dir.exists()

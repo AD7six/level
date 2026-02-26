@@ -32,13 +32,14 @@ class CanonicalLocation(Check):
 
         base = expected.name
         name = entity.name
+        same_parent = entity.parent.resolve() == expected.parent.resolve()
 
         # Exact canonical match
         if entity.resolve() == expected.resolve():
             return []
 
         # Allow valid numeric suffixes
-        if is_valid_suffixed_slug(base, name):
+        if same_parent and is_valid_suffixed_slug(base, name):
             return []
 
         return [
@@ -55,14 +56,19 @@ class CanonicalLocation(Check):
 
         base = expected.name
         name = entity.name
+        same_parent = entity.parent.resolve() == expected.parent.resolve()
 
         # Already canonical or valid suffixed
-        if entity.resolve() == expected.resolve() or is_valid_suffixed_slug(base, name):
+        if entity.resolve() == expected.resolve() or (
+            same_parent and is_valid_suffixed_slug(base, name)
+        ):
             return []
 
         root = self._root_resolver(context)
-        target = resolve_collision(root, Path(expected.name), current_path=entity)
-        new_path = rename_to_canonical(root, entity, Path(target.name))
+        expected_rel = expected.relative_to(root)
+        target = resolve_collision(root, expected_rel, current_path=entity)
+        target_rel = target.relative_to(root)
+        new_path = rename_to_canonical(root, entity, target_rel)
 
         return [
             FixResult(

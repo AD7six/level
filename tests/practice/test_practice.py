@@ -51,8 +51,7 @@ def test_lint_detects_invalid_directory_name(tmp_path):
 
     issues = lint_practice(context)
 
-    # Directories without valid meta are ignored by canonical-only lint
-    assert issues == []
+    assert any("meta.toml missing in: not-a-date" == i.message for i in issues)
 
 
 def test_fix_renames_non_canonical_directory(tmp_path):
@@ -76,8 +75,7 @@ def test_fix_renames_non_canonical_directory(tmp_path):
     broken.rename(renamed)
 
     issues = lint_practice(context)
-    # Canonical-only lint ignores directories without valid meta
-    assert issues == []
+    assert any("meta.toml missing in: 2026-02-26-temp" == i.message for i in issues)
 
 
 def test_lint_detects_invalid_meta(tmp_path):
@@ -90,8 +88,7 @@ def test_lint_detects_invalid_meta(tmp_path):
     (bad / "meta.toml").write_text("not = valid = toml")
 
     issues = lint_practice(context)
-    # Canonical-only lint ignores invalid meta (cannot derive canonical path)
-    assert issues == []
+    assert any("Invalid meta.toml in: 2026-02-27-session" == i.message for i in issues)
 
 
 def test_lint_detects_missing_meta_fields(tmp_path):
@@ -104,7 +101,7 @@ def test_lint_detects_missing_meta_fields(tmp_path):
     (bad / "meta.toml").write_text('date = "2026-02-28"')
 
     issues = lint_practice(context)
-    # Canonical-only lint ignores meta missing required fields
+    # MetaSchema is currently a no-op; readable meta passes lint.
     assert issues == []
 
 
@@ -119,7 +116,7 @@ def test_fix_renames_to_canonical_from_meta(tmp_path):
 
     changes = fix_practice(context)
 
-    assert any("Renamed wrong-name" in c for c in changes)
+    assert any("Renamed wrong-name" in c.message for c in changes)
     assert (practice_root / "2026-03-01-session").exists()
 
 
