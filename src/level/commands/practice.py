@@ -13,7 +13,7 @@ from typing import Any
 
 from level.commands._doctor import make_doctor_handler
 from level.config import Context
-from level.domains.practice.practice import (
+from level.domains.practice import (
     create_practice,
     fix_practice,
     lint_practice,

@@ -1,7 +1,7 @@
 from datetime import date
 
 from level.config import build_context
-from level.domains.plan.plan import (
+from level.domains.plan import (
     Plan,
     fix_plan,
     lint_plan,

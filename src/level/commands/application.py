@@ -9,7 +9,9 @@ from datetime import date, datetime
 
 from level.commands._doctor import make_doctor_handler
 from level.config import Context
-from level.domains.applications.applications import (
+from level.domains.applications import (
+    STATES,
+    TERMINAL_STATES,
     Application,
     create_application,
     fix_applications,
@@ -18,7 +20,6 @@ from level.domains.applications.applications import (
     list_applications,
     move_application,
 )
-from level.domains.applications.schema import STATES, TERMINAL_STATES
 
 # ---------------------------------------------------------------------------
 # Handlers

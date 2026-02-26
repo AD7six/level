@@ -1,7 +1,8 @@
 import pytest
 
 from level.config import build_context
-from level.domains.applications.applications import (
+from level.domains.applications import (
+    STATES,
     TRANSITIONS,
     create_application,
     fix_applications,
@@ -10,7 +11,6 @@ from level.domains.applications.applications import (
     list_applications,
     move_application,
 )
-from level.domains.applications.schema import STATES
 
 # ---------------------------------------------------------------------------
 # helpers
