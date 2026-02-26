@@ -26,7 +26,8 @@ def write_meta_toml(path: Path, data: Mapping[str, Any] | object) -> None:
 
     lines: list[str] = []
 
-    for key, value in data.items():
+    for key in sorted(data.keys()):
+        value = data[key]
         if value is None:
             continue
 
