@@ -45,3 +45,50 @@ def build_slug(d: date, name: str) -> str:
     YYYY-MM-DD-{name}
     """
     return f"{d.strftime('%Y-%m-%d')}-{slugify(name)}"
+
+
+def is_valid_suffixed_slug(base: str, name: str) -> bool:
+    """
+    Return True if `name` is either exactly `base` or
+    `base-<number>` where <number> is a positive integer.
+    """
+    if name == base:
+        return True
+
+    if not name.startswith(base + "-"):
+        return False
+
+    suffix = name[len(base) + 1 :]
+    return suffix.isdigit()
+
+
+def resolve_collision(
+    root: Path,
+    canonical_rel: Path,
+    current_path: Path | None = None,
+) -> Path:
+    """
+    Resolve a canonical relative path under root, adding a numeric
+    suffix (-1, -2, ...) if necessary to avoid collisions.
+
+    If `current_path` is provided and already matches the resolved
+    path, it will be ignored for collision purposes.
+    """
+    target = root / canonical_rel
+
+    if not target.exists() or (current_path and target == current_path):
+        return target
+
+    base_name = canonical_rel.name
+    parent = canonical_rel.parent
+
+    counter = 1
+    while True:
+        candidate_name = f"{base_name}-{counter}"
+        candidate_rel = parent / candidate_name
+        candidate = root / candidate_rel
+
+        if not candidate.exists() or (current_path and candidate == current_path):
+            return candidate
+
+        counter += 1

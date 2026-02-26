@@ -1,4 +1,4 @@
-from level.practice.harness import run_tests
+from level.domains.practice.harness import run_tests
 
 
 def test_run_tests_passes(capsys):

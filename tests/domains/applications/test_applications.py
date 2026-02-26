@@ -1,6 +1,8 @@
 import pytest
 
-from level.applications.applications import (
+from level.config import build_context
+from level.domains.applications import (
+    STATES,
     TRANSITIONS,
     create_application,
     fix_applications,
@@ -9,8 +11,6 @@ from level.applications.applications import (
     list_applications,
     move_application,
 )
-from level.applications.schema import STATES
-from level.config import build_context
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -149,7 +149,7 @@ def test_lint_detects_non_canonical_path(tmp_path, monkeypatch):
 
     issues = lint_applications(context)
 
-    assert any("not in canonical location" in i for i in issues)
+    assert any("Non-canonical directory" in f.message for f in issues)
 
 
 def test_lint_allows_numeric_suffix(tmp_path, monkeypatch):
@@ -176,7 +176,7 @@ def test_fix_moves_to_canonical_location(tmp_path, monkeypatch):
 
     actions = fix_applications(context)
 
-    assert any("Moved" in a for a in actions)
+    assert any("Renamed" in r.message for r in actions)
 
     # Canonical path should now exist
     canonical = tmp_path / "applications" / "drafts" / "2026-01-01-acme"

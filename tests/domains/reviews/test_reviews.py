@@ -4,7 +4,7 @@ from datetime import date
 import pytest
 
 from level.config import build_context
-from level.reviews import reviews as review_module
+from level.domains.reviews import reviews as review_module
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -62,7 +62,7 @@ def test_review_lifecycle(tmp_path, monkeypatch, period):
 
     # Fix structure
     actions = review_module.fix_reviews(context)
-    assert any("Moved" in action for action in actions)
+    assert any("Renamed" in action.message for action in actions)
 
     # Canonical restored
     assert canonical_dir.exists()

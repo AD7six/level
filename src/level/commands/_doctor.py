@@ -3,29 +3,33 @@
 import argparse
 from collections.abc import Callable
 
+from level.checks.base import Finding, FixResult
 from level.config import Context
 
 
 def make_doctor_handler(
-    lint_fn: Callable[[Context], list[str]],
-    fix_fn: Callable[[Context], list[str]],
+    lint_fn: Callable[[Context], list[Finding]],
+    fix_fn: Callable[[Context], list[FixResult]],
 ) -> Callable[[Context, argparse.Namespace], None]:
     def handler(context: Context, args: argparse.Namespace) -> None:
 
         if args.fix:
-            actions = fix_fn(context)
-            if actions:
+            results = fix_fn(context)
+            if results:
                 print("Actions performed:")
-                for a in actions:
-                    print(f"  - {a}")
+                for r in results:
+                    print(f"  - {r.message}")
             else:
                 print("No changes required.")
         else:
-            issues = lint_fn(context)
-            if issues:
+            findings = lint_fn(context)
+            if findings:
                 print("Issues detected:")
-                for i in issues:
-                    print(f"  - {i}")
+                for f in findings:
+                    print(f"  - {f.message}")
+
+                if any(f.fixable for f in findings):
+                    print("\nSome issues are fixable. Run with --fix to apply changes.")
             else:
                 print("No issues found.")
 

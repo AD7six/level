@@ -1,12 +1,10 @@
 import argparse
-from datetime import date
 
 from level.commands.plan import (
     handle_plan_doctor,
     handle_plan_show,
 )
 from level.config import build_context
-from level.plan.plan import Plan, save_plan
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -26,35 +24,29 @@ def _context(tmp_path, monkeypatch):
 def test_plan_show_no_plan(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path, monkeypatch)
 
-    args = argparse.Namespace()
-    handle_plan_show(context, args)
+    monkeypatch.setattr("level.commands.plan.load_plan", lambda context: None)
+
+    handle_plan_show(context, argparse.Namespace())
 
     captured = capsys.readouterr()
     assert "No plan defined" in captured.out
 
 
-def test_plan_show_outputs_display_dict(tmp_path, monkeypatch, capsys):
+def test_plan_show_prints_display_dict(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path, monkeypatch)
 
-    plan = Plan(
-        target_roles=["Engineer"],
-        target_total_comp_min=50000,
-        target_total_comp_max=70000,
-        comp_currency="EUR",
-        last_reviewed=date(2026, 2, 20),
-    )
+    class DummyPlan:
+        def as_display_dict(self):
+            return {"Key": "Value"}
 
-    save_plan(context, plan)
+    monkeypatch.setattr("level.commands.plan.load_plan", lambda context: DummyPlan())
 
-    args = argparse.Namespace()
-    handle_plan_show(context, args)
+    handle_plan_show(context, argparse.Namespace())
 
     captured = capsys.readouterr()
 
-    assert "Target Roles" in captured.out
-    assert "Engineer" in captured.out
-    assert "50,000" in captured.out
-    assert "70,000" in captured.out
+    assert "Career Plan" in captured.out
+    assert "Key: Value" in captured.out
 
 
 # ---------------------------------------------------------------------------
@@ -62,24 +54,39 @@ def test_plan_show_outputs_display_dict(tmp_path, monkeypatch, capsys):
 # ---------------------------------------------------------------------------
 
 
-def test_plan_doctor_detects_missing_meta(tmp_path, monkeypatch, capsys):
+def test_plan_doctor_lint_outputs_issues(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path, monkeypatch)
 
-    args = argparse.Namespace(fix=False)
-    handle_plan_doctor(context, args)
+    monkeypatch.setattr("level.commands.plan.lint_plan", lambda context: ["problem"])
+
+    handle_plan_doctor(context, argparse.Namespace(fix=False))
 
     captured = capsys.readouterr()
-    assert (
-        "meta.toml is missing" in captured.out
-        or "Plan directory does not exist" in captured.out
-    )
+
+    assert "Issues detected:" in captured.out
+    assert "problem" in captured.out
 
 
-def test_plan_doctor_fix_creates_meta(tmp_path, monkeypatch, capsys):
+def test_plan_doctor_fix_outputs_actions(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path, monkeypatch)
 
-    args = argparse.Namespace(fix=True)
-    handle_plan_doctor(context, args)
+    monkeypatch.setattr("level.commands.plan.fix_plan", lambda context: ["fixed"])
+
+    handle_plan_doctor(context, argparse.Namespace(fix=True))
 
     captured = capsys.readouterr()
-    assert "Created meta.toml" in captured.out or "Actions performed" in captured.out
+
+    assert "Actions performed:" in captured.out
+    assert "fixed" in captured.out
+
+
+def test_plan_doctor_fix_no_changes(tmp_path, monkeypatch, capsys):
+    context = _context(tmp_path, monkeypatch)
+
+    monkeypatch.setattr("level.commands.plan.fix_plan", lambda context: [])
+
+    handle_plan_doctor(context, argparse.Namespace(fix=True))
+
+    captured = capsys.readouterr()
+
+    assert "No changes required." in captured.out

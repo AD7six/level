@@ -1,7 +1,7 @@
 from datetime import date
 
 from level.config import build_context
-from level.plan.plan import (
+from level.domains.plan import (
     Plan,
     fix_plan,
     lint_plan,
@@ -87,7 +87,7 @@ def test_lint_reports_missing_meta(tmp_path, monkeypatch):
 
     issues = lint_plan(context)
 
-    assert "meta.toml is missing" in issues[0]
+    assert "meta.toml is missing" in issues[0].message
 
 
 def test_fix_creates_missing_meta(tmp_path, monkeypatch):
@@ -101,7 +101,7 @@ def test_fix_creates_missing_meta(tmp_path, monkeypatch):
     meta_path = tmp_path / "plan" / "meta.toml"
 
     assert meta_path.exists()
-    assert any("Created meta.toml" in a for a in actions)
+    assert any("Created meta.toml" in a.message for a in actions)
 
 
 def test_fix_is_idempotent(tmp_path, monkeypatch):
@@ -137,7 +137,7 @@ def test_lint_detects_invalid_currency(tmp_path, monkeypatch):
 
     issues = lint_plan(context)
 
-    assert any("comp_currency" in i for i in issues)
+    assert any("comp_currency" in i.message for i in issues)
 
 
 def test_lint_detects_invalid_track(tmp_path, monkeypatch):
@@ -148,7 +148,7 @@ def test_lint_detects_invalid_track(tmp_path, monkeypatch):
 
     issues = lint_plan(context)
 
-    assert any("preferred_track" in i for i in issues)
+    assert any("preferred_track" in i.message for i in issues)
 
 
 def test_as_display_dict_aggregates_comp():

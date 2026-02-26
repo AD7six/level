@@ -13,7 +13,7 @@ from typing import Any
 
 from level.commands._doctor import make_doctor_handler
 from level.config import Context
-from level.reviews.reviews import (
+from level.domains.reviews import (
     Review,
     fix_reviews,
     lint_reviews,
