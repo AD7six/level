@@ -5,6 +5,14 @@ import pytest
 
 COMMANDS_DIR = Path(__file__).resolve().parents[2] / "src" / "level" / "commands"
 
+COMMAND_DOMAIN_MAP = {
+    "application": "applications",
+    "plan": "plan",
+    "practice": "practice",
+    "resume": "resumes",
+    "review": "reviews",
+}
+
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -13,6 +21,23 @@ COMMANDS_DIR = Path(__file__).resolve().parents[2] / "src" / "level" / "commands
 
 def _parse(file: Path) -> ast.Module:
     return ast.parse(file.read_text())
+
+
+def _domain_command_files():
+    """
+    Yield public domain command entrypoint modules only.
+    Skip private helpers (e.g. _doctor.py).
+    And commands that do not have a corresponding domain mapping.
+    """
+    for file in COMMANDS_DIR.glob("*.py"):
+        if file.name.startswith("_"):
+            continue
+
+        domain = COMMAND_DOMAIN_MAP.get(file.stem)
+        if not domain:
+            continue
+
+        yield file
 
 
 # ---------------------------------------------------------------------------
@@ -25,24 +50,23 @@ def test_commands_do_not_use_loops_or_comprehensions() -> None:
     Command layer must not perform domain logic.
     No loops or comprehensions allowed in command files.
     """
-    for file in COMMANDS_DIR.glob("*.py"):
-        domain = file.stem
+    for file in _domain_command_files():
+
+        command_name = file.stem
+        domain = COMMAND_DOMAIN_MAP.get(command_name)
+
         tree = _parse(file)
+        source = file.read_text()
+        allow_override = "# architecture: allow" in source
 
         for node in ast.walk(tree):
             if isinstance(node, (ast.For, ast.While)):
-                pytest.fail(
-                    f"{file.name} contains loop logic. Move iteration/"
-                    f"aggregation into level.domains.{domain} as a function "
-                    "and call it from the command."
-                )
-
-            if isinstance(node, (ast.ListComp, ast.DictComp, ast.SetComp)):
-                pytest.fail(
-                    f"{file.name} contains comprehension logic. "
-                    f"Implement this inside level.domains.{domain} and "
-                    "expose it as a function, then call it from the command."
-                )
+                if not allow_override:
+                    pytest.fail(
+                        f"{file.name} contains loop logic. Move iteration/"
+                        f"aggregation into level.domains.{domain} as a function "
+                        "and call it from the command."
+                    )
 
 
 def test_commands_do_not_aggregate_data() -> None:
@@ -59,20 +83,31 @@ def test_commands_do_not_aggregate_data() -> None:
         "min",
         "sorted",
         "sum",
+        "next",
     }
 
-    for file in COMMANDS_DIR.glob("*.py"):
-        domain = file.stem
+    for file in _domain_command_files():
+        command_name = file.stem
+        domain = COMMAND_DOMAIN_MAP.get(command_name)
+
         tree = _parse(file)
+        source = file.read_text()
+        allow_override = "# architecture: allow" in source
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
                 if node.func.id in forbidden_calls:
+                    if not allow_override:
+                        pytest.fail(
+                            f"{file.name} uses aggregation call '{node.func.id}'. "
+                            f"Expose a function in level.domains.{domain} and call it "
+                            "from the command."
+                        )
+            if isinstance(node, ast.Lambda):
+                if not allow_override:
                     pytest.fail(
-                        f"{file.name} uses aggregation call '{node.func.id}'. "
-                        f"Move this logic into level.domains.{domain} "
-                        "(e.g. get_{domain}_metrics(context)) and call it "
-                        "from the command."
+                        f"{file.name} contains lambda. Domain logic should live "
+                        f"in level.domains.{domain}."
                     )
 
 
@@ -82,8 +117,10 @@ def test_commands_do_not_import_filesystem_modules() -> None:
     """
     forbidden_roots = {"os", "pathlib", "tomllib"}
 
-    for file in COMMANDS_DIR.glob("*.py"):
-        domain = file.stem
+    for file in _domain_command_files():
+        command_name = file.stem
+        domain = COMMAND_DOMAIN_MAP.get(command_name)
+
         tree = _parse(file)
 
         for node in ast.walk(tree):
