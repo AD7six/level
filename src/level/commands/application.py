@@ -8,18 +8,17 @@ import argparse
 from datetime import date, datetime
 
 from level.commands._doctor import make_doctor_handler
+from level.commands._format import render_grouped_rows
 from level.config import Context
 from level.domains.applications import (
-    STATES,
-    TERMINAL_STATES,
-    Application,
     create_application,
     fix_applications,
     get_application,
     lint_applications,
-    list_applications,
+    list_application_rows,
     move_application,
 )
+from level.domains.applications.schema import SORTED_STATES
 
 # ---------------------------------------------------------------------------
 # Handlers
@@ -69,40 +68,26 @@ def handle_application_new(context: Context, args: argparse.Namespace) -> None:
 
 
 def handle_application_list(context: Context, args: argparse.Namespace) -> None:
-    apps = list(list_applications(context, state=args.state))
+    rows = list_application_rows(
+        context,
+        state=args.state,
+        include_terminal=getattr(args, "all", False),
+    )
 
-    # Filter terminal states unless --all is provided
-    if not getattr(args, "all", False):
-        apps = [a for a in apps if a.state not in TERMINAL_STATES]
-
-    if not apps:
+    if not rows:
         return
 
-    # Group by state in canonical order
-    grouped: dict[str, list[Application]] = {}
-    for app in apps:
-        grouped.setdefault(app.state, []).append(app)
-
-    for state in STATES:
-        if state not in grouped:
-            continue
-
-        print(state.upper())
-
-        # Sort by created_at descending if available, else by slug
-        state_apps = grouped[state]
-        state_apps.sort(
-            key=lambda a: (a.created_at or "", a.slug),
-            reverse=True,
+    print(
+        render_grouped_rows(
+            rows,
+            group_key="state",
+            group_header_formatter=lambda s: s.upper(),
+            row_formatter=lambda row: (
+                f"  {row['date']:12}  {row['company']:<22} "
+                f"{row['role']:<40} ({row['slug']})"
+            ),
         )
-
-        for app in state_apps:
-            created = app.created_at or ""
-            company = app.company or ""
-            role = app.role or ""
-            print(f"  {created:12}  {company:<22} {role:<40} ({app.slug})")
-
-        print()
+    )
 
 
 def handle_application_show(context: Context, args: argparse.Namespace) -> None:
@@ -171,7 +156,7 @@ def register(
     )
     application_list_parser.add_argument(
         "--state",
-        choices=sorted(STATES),
+        choices=SORTED_STATES,
         help="Filter by state",
     )
     application_list_parser.add_argument(
@@ -197,7 +182,7 @@ def register(
     application_move_parser.add_argument("slug", help="Application slug")
     application_move_parser.add_argument(
         "state",
-        choices=sorted(STATES),
+        choices=SORTED_STATES,
         help="New state",
     )
     application_move_parser.set_defaults(func=handle_application_move)

@@ -2,8 +2,7 @@ import argparse
 import subprocess
 from typing import Any
 
-from level.commands._format import render_kv_block, render_table, render_list
-
+from level.commands._format import render_dict, render_list
 from level.config import Context, get_data_root
 from level.domains.plan import (
     fix_plan,
@@ -27,7 +26,7 @@ def handle_plan_show(context: Context, args: argparse.Namespace) -> None:
     print("-----------")
 
     data = plan.as_display_dict()
-    print(render_kv_block(data))
+    print(render_dict(data))
 
 
 def handle_plan_edit(context: Context, args: argparse.Namespace) -> None:

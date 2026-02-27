@@ -12,6 +12,7 @@ from datetime import date
 from typing import Any
 
 from level.commands._doctor import make_doctor_handler
+from level.commands._format import render_objects
 from level.config import Context
 from level.domains.reviews import (
     Review,
@@ -64,8 +65,12 @@ def handle_review_history(context: Context, args: argparse.Namespace) -> None:
         print("No reviews found.")
         return
 
-    for r in reviews:
-        print(f"{r.date.isoformat()}  {r.period}")
+    print(
+        render_objects(
+            reviews,
+            lambda r: f"{r.date.isoformat()}  {r.period}",
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
