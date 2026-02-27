@@ -12,13 +12,14 @@ from datetime import date
 from typing import Any
 
 from level.commands._doctor import make_doctor_handler
-from level.commands._format import render_objects
+from level.commands._format import render_list, render_objects
 from level.config import Context
 from level.domains.practice import (
     create_practice,
     fix_practice,
     lint_practice,
     list_practice,
+    practice_metrics,
 )
 
 # ---------------------------------------------------------------------------
@@ -88,7 +89,12 @@ def handle_practice_review(context: Context, args: argparse.Namespace) -> None:
 
 
 def handle_practice_stats(context: Context, args: argparse.Namespace) -> None:
-    print("Not implemented yet.")
+    metrics = practice_metrics(context)
+    if not metrics:
+        print("No practice data available.")
+        return
+
+    render_list([f"{key}: {value}" for key, value in metrics.items()])
 
 
 def handle_practice_archive(context: Context, args: argparse.Namespace) -> None:

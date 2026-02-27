@@ -55,6 +55,8 @@ def create_practice(
         {
             "date": practice_date,
             "name": name,
+            "reviewed_count": 0,
+            "last_reviewed": None,
         },
     )
 
@@ -153,3 +155,52 @@ def lint_practice(context: Context) -> list[Finding]:
 
 def fix_practice(context: Context) -> list[FixResult]:
     return fix_domain(context, _practice_domain)
+
+
+def review_practice(context: Context, slug: str) -> None:
+    """
+    Increment review frequency metadata for a practice session.
+    """
+    root = _practice_root(context)
+    practice_dir = root / slug
+
+    meta_path = practice_dir / "meta.toml"
+    if not meta_path.exists():
+        raise FileNotFoundError(f"Practice session not found: {slug}")
+
+    with meta_path.open("rb") as f:
+        raw = tomllib.load(f)
+
+    reviewed_count = int(raw.get("reviewed_count", 0)) + 1
+    raw["reviewed_count"] = reviewed_count
+    raw["last_reviewed"] = date.today()
+
+    write_meta_toml(meta_path, raw)
+
+
+def practice_metrics(context: Context) -> dict[str, int]:
+    """
+    Minimal stats integration hook for practice domain.
+    Returns basic aggregate metrics.
+    """
+    total_sessions = 0
+    total_reviews = 0
+
+    for entity in _practice_finder(context):
+        total_sessions += 1
+        meta_path = entity / "meta.toml"
+        if not meta_path.exists():
+            continue
+
+        try:
+            with meta_path.open("rb") as f:
+                raw = tomllib.load(f)
+        except Exception:
+            continue
+
+        total_reviews += int(raw.get("reviewed_count", 0))
+
+    return {
+        "total_sessions": total_sessions,
+        "total_reviews": total_reviews,
+    }
