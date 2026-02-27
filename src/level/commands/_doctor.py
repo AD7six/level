@@ -4,8 +4,8 @@ import argparse
 from collections.abc import Callable
 
 from level.checks.base import Finding, FixResult
-from level.config import Context
 from level.commands._format import render_list
+from level.config import Context
 
 
 def make_doctor_handler(
