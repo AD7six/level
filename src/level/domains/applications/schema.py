@@ -33,6 +33,8 @@ STATES: Final[list[str]] = [
     "withdrawn",
 ]
 
+SORTED_STATES: Final[list[str]] = sorted(STATES)
+
 TERMINAL_STATES: Final[set[str]] = {
     "rejected",
     "withdrawn",

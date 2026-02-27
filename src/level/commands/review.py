@@ -12,10 +12,12 @@ from datetime import date
 from typing import Any
 
 from level.commands._doctor import make_doctor_handler
+from level.commands._format import render_objects
 from level.config import Context
 from level.domains.reviews import (
     Review,
     fix_reviews,
+    get_review_metrics,
     lint_reviews,
     list_reviews,
     save_review,
@@ -48,17 +50,12 @@ handle_review_annual = _make_period_handler("annual")
 
 
 def handle_review_metrics(context: Context, args: argparse.Namespace) -> None:
-    reviews = list_reviews(context)
+    metrics = get_review_metrics(context)
 
-    weekly = sum(1 for r in reviews if r.period == "weekly")
-    monthly = sum(1 for r in reviews if r.period == "monthly")
-    quarterly = sum(1 for r in reviews if r.period == "quarterly")
-    annual = sum(1 for r in reviews if r.period == "annual")
-
-    print(f"Weekly reviews: {weekly}")
-    print(f"Monthly reviews: {monthly}")
-    print(f"Quarterly reviews: {quarterly}")
-    print(f"Annual reviews: {annual}")
+    print(f"Weekly reviews: {metrics['weekly']}")
+    print(f"Monthly reviews: {metrics['monthly']}")
+    print(f"Quarterly reviews: {metrics['quarterly']}")
+    print(f"Annual reviews: {metrics['annual']}")
 
 
 def handle_review_history(context: Context, args: argparse.Namespace) -> None:
@@ -68,18 +65,22 @@ def handle_review_history(context: Context, args: argparse.Namespace) -> None:
         print("No reviews found.")
         return
 
-    for r in reviews:
-        print(f"{r.date.isoformat()}  {r.period}")
+    print(
+        render_objects(
+            reviews,
+            lambda r: f"{r.date.isoformat()}  {r.period}",
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
 # Doctor Handler
 # ---------------------------------------------------------------------------
 
-handle_review_doctor = make_doctor_handler(
-    lint_reviews,
-    fix_reviews,
-)
+
+def handle_review_doctor(context: Context, args: argparse.Namespace) -> None:
+    handler = make_doctor_handler(lint_reviews, fix_reviews)
+    handler(context, args)
 
 
 # ---------------------------------------------------------------------------

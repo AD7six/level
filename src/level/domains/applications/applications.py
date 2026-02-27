@@ -284,6 +284,42 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
     )
 
 
+def list_application_rows(
+    context: Context,
+    *,
+    state: str | None = None,
+    include_terminal: bool = False,
+) -> list[dict[str, str]]:
+    applications = list(list_applications(context, state=state))
+
+    # Filter terminal states if needed
+    if not include_terminal:
+        from .schema import TERMINAL_STATES
+
+        applications = [app for app in applications if app.state not in TERMINAL_STATES]
+
+    # Sort by state, then date (desc), then slug
+    applications.sort(
+        key=lambda app: (
+            app.state,
+            app.created_at or "",
+            app.slug,
+        ),
+        reverse=True,
+    )
+
+    return [
+        {
+            "state": app.state,
+            "date": app.created_at or "",
+            "company": app.company or "",
+            "role": app.role or "",
+            "slug": app.slug,
+        }
+        for app in applications
+    ]
+
+
 # ---------------------------------------------------------------------------
 # Doctor / Lint
 # ---------------------------------------------------------------------------

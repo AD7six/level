@@ -2,6 +2,7 @@ import argparse
 import subprocess
 from typing import Any
 
+from level.commands._format import render_dict, render_list
 from level.config import Context, get_data_root
 from level.domains.plan import (
     fix_plan,
@@ -24,8 +25,8 @@ def handle_plan_show(context: Context, args: argparse.Namespace) -> None:
     print("Career Plan")
     print("-----------")
 
-    for k, v in plan.as_display_dict().items():
-        print(f"{k}: {v}")
+    data = plan.as_display_dict()
+    print(render_dict(data))
 
 
 def handle_plan_edit(context: Context, args: argparse.Namespace) -> None:
@@ -59,8 +60,7 @@ def handle_plan_doctor(context: Context, args: argparse.Namespace) -> None:
             return
 
         print("Actions performed:")
-        for action in actions:
-            print(f"  - {action}")
+        print(render_list([str(action) for action in actions]))
         return
 
     issues = lint_plan(context)
@@ -70,8 +70,7 @@ def handle_plan_doctor(context: Context, args: argparse.Namespace) -> None:
         return
 
     print("Issues detected:")
-    for issue in issues:
-        print(f"  - {issue}")
+    print(render_list([str(issue) for issue in issues]))
 
 
 # ---------------------------------------------------------------------------

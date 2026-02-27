@@ -12,6 +12,7 @@ from datetime import date
 from typing import Any
 
 from level.commands._doctor import make_doctor_handler
+from level.commands._format import render_objects
 from level.config import Context
 from level.domains.practice import (
     create_practice,
@@ -43,6 +44,11 @@ DRILLS = [
     "deduplicate-preserve-order",
 ]
 
+
+def _practice_slug(session: object) -> str:
+    return str(getattr(session, "slug", session))
+
+
 # ---------------------------------------------------------------------------
 # Handlers
 # ---------------------------------------------------------------------------
@@ -70,8 +76,7 @@ def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
         print("No practice sessions found.")
         return
 
-    for session in sessions:
-        print(session.slug)
+    print(render_objects(sessions, _practice_slug))
 
 
 def handle_practice_open(context: Context, args: argparse.Namespace) -> None:
@@ -185,7 +190,9 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     )
 
     practice_doctor_parser.set_defaults(func=handle_practice_doctor)
+
     # Default help if no subcommand provided
-    practice_parser.set_defaults(
-        func=lambda context, args, p=practice_parser: p.print_help()
-    )
+    def _print_practice_help(context: Context, args: argparse.Namespace) -> None:
+        args.parser.print_help()
+
+    practice_parser.set_defaults(func=_print_practice_help, parser=practice_parser)

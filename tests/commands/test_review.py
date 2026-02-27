@@ -62,13 +62,14 @@ def test_period_command_delegates_to_save_review(
 def test_handle_metrics_outputs_counts(tmp_path, monkeypatch, capsys):
     context = _context(tmp_path)
 
-    class Dummy:
-        def __init__(self, period):
-            self.period = period
-
     monkeypatch.setattr(
-        "level.commands.review.list_reviews",
-        lambda context_arg: [Dummy("weekly"), Dummy("weekly"), Dummy("monthly")],
+        "level.commands.review.get_review_metrics",
+        lambda context_arg: {
+            "weekly": 2,
+            "monthly": 1,
+            "quarterly": 0,
+            "annual": 0,
+        },
     )
 
     review_cmd.handle_review_metrics(context, Namespace())
@@ -122,8 +123,8 @@ def test_handle_doctor_lint_outputs_issues(tmp_path, monkeypatch, capsys):
     review_cmd.handle_review_doctor(context, Namespace(fix=False))
 
     out = capsys.readouterr().out
-    # Current doctor handler reports no issues in this path
-    assert "No issues found." in out
+    assert "Issues detected:" in out
+    assert "problem" in out
 
 
 def test_handle_doctor_fix_outputs_actions(tmp_path, monkeypatch, capsys):
@@ -144,7 +145,8 @@ def test_handle_doctor_fix_outputs_actions(tmp_path, monkeypatch, capsys):
     review_cmd.handle_review_doctor(context, Namespace(fix=True))
 
     out = capsys.readouterr().out
-    assert "No changes required." in out
+    assert "Actions performed:" in out
+    assert "fixed" in out
 
 
 def test_handle_doctor_fix_no_changes(tmp_path, monkeypatch, capsys):

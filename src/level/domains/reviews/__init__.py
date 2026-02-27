@@ -1,6 +1,7 @@
 from .reviews import (
     Review,
     fix_reviews,
+    get_review_metrics,
     lint_reviews,
     list_reviews,
     load_review,
@@ -14,4 +15,5 @@ __all__ = [
     "list_reviews",
     "load_review",
     "save_review",
+    "get_review_metrics",
 ]

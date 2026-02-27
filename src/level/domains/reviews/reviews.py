@@ -177,6 +177,17 @@ def list_reviews(context: Context) -> list[Review]:
     return sorted(reviews, key=lambda r: r.date, reverse=True)
 
 
+def get_review_metrics(context: Context) -> dict[str, int]:
+    reviews = list_reviews(context)
+
+    return {
+        "weekly": sum(1 for r in reviews if r.period == "weekly"),
+        "monthly": sum(1 for r in reviews if r.period == "monthly"),
+        "quarterly": sum(1 for r in reviews if r.period == "quarterly"),
+        "annual": sum(1 for r in reviews if r.period == "annual"),
+    }
+
+
 def _reviews_finder(context: Context) -> list[Path]:
     root = _reviews_dir(context)
     if not root.exists():
