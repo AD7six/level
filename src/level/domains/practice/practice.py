@@ -76,7 +76,7 @@ def create_practice(
             overwrite=False,
         )
 
-    # Write meta.toml (template recorded for future useso future logic does not depend on directory name)
+    # Write meta.toml (template recorded for future use)
     write_meta_toml(
         practice_dir / "meta.toml",
         {
@@ -97,16 +97,26 @@ def list_practice(context: Context) -> Iterable[Practice]:
         if not child.is_dir():
             continue
 
-        parts = child.name.split("-", 3)
-        if len(parts) < 3:
+        meta_path = child / "meta.toml"
+        if not meta_path.exists():
             continue
 
         try:
-            practice_date = date.fromisoformat("-".join(parts[:3]))
+            with meta_path.open("rb") as f:
+                raw = tomllib.load(f)
+        except Exception:
+            continue
+
+        practice_date = raw.get("date")
+        if not practice_date:
+            continue
+
+        try:
+            parsed_date = date.fromisoformat(str(practice_date))
         except ValueError:
             continue
 
-        yield Practice(date=practice_date, slug=child.name)
+        yield Practice(date=parsed_date, slug=child.name)
 
 
 def _practice_finder(context: Context) -> Iterable[Path]:
