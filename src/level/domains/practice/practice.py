@@ -54,37 +54,40 @@ def create_practice(
     slug = practice_dir.name
     practice_dir.mkdir(parents=True, exist_ok=False)
 
-    # Write meta.toml
-    write_meta_toml(
-        practice_dir / "meta.toml",
-        {
-            "date": practice_date,
-            "name": name,
-            "reviewed_count": 0,
-            "last_reviewed": None,
-        },
-    )
-
     # Prefer drill-specific template if it exists, otherwise fallback to default
     specific_template = f"practice/{name}.py.tmpl"
     output_file = practice_dir / "00-start.py"
 
     try:
+        template_used = specific_template
         render_template_to_path(
             context=context,
-            template_name=specific_template,
+            template_name=template_used,
             variables={"date": practice_date.isoformat()},
             output_path=output_file,
             overwrite=False,
         )
     except TemplateNotFoundError:
+        template_used = "practice/default.py.tmpl"
         render_template_to_path(
             context=context,
-            template_name="practice/default.py.tmpl",
+            template_name=template_used,
             variables={"date": practice_date.isoformat()},
             output_path=output_file,
             overwrite=False,
         )
+
+    # Write meta.toml (template recorded for future use)
+    write_meta_toml(
+        practice_dir / "meta.toml",
+        {
+            "date": practice_date,
+            "name": name,
+            "template": template_used,
+            "reviewed_count": 0,
+            "last_reviewed": None,
+        },
+    )
 
     return Practice(date=practice_date, slug=slug)
 
