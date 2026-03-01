@@ -55,11 +55,10 @@ def create_practice(
     practice_dir.mkdir(parents=True, exist_ok=False)
 
     # Prefer drill-specific template if it exists, otherwise fallback to default
-    specific_template = f"practice/{name}.py.tmpl"
+    template_used = f"practice/{name}.py.tmpl"
     output_file = practice_dir / "00-start.py"
 
     try:
-        template_used = specific_template
         render_template_to_path(
             context=context,
             template_name=template_used,
@@ -77,7 +76,7 @@ def create_practice(
             overwrite=False,
         )
 
-    # Write meta.toml (template recorded for future use)
+    # Write meta.toml (template recorded for future useso future logic does not depend on directory name)
     write_meta_toml(
         practice_dir / "meta.toml",
         {
