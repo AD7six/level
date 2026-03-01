@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Protocol
 
 from level.checks.base import Finding, FixResult
 from level.checks.canonical_location import CanonicalLocation
@@ -16,6 +17,10 @@ from level.core.doctor import Domain, fix_domain, lint_domain
 from level.core.meta import write_meta_toml
 from level.templates.loader import TemplateNotFoundError
 from level.templates.renderer import render_template_to_path
+
+
+class EditorOpener(Protocol):
+    def __call__(self, path: Path, *, auto_open: bool, editor: str | None) -> bool: ...
 
 
 @dataclass(frozen=True)
@@ -176,6 +181,42 @@ def review_practice(context: Context, slug: str) -> None:
     raw["last_reviewed"] = date.today()
 
     write_meta_toml(meta_path, raw)
+
+
+def review_latest_attempt(
+    context: Context,
+    slug: str,
+    *,
+    open_editor: EditorOpener,
+    auto_open: bool,
+    editor: str | None,
+) -> bool:
+    """
+    Locate the latest attempt file for a practice session, open it in the editor,
+    and update review metadata if the edit session completes successfully.
+    """
+    root = _practice_root(context)
+    practice_dir = root / slug
+
+    if not practice_dir.exists():
+        raise FileNotFoundError(f"Practice session not found: {slug}")
+
+    attempt_files = sorted(
+        (p for p in practice_dir.glob("*.py") if p.name[:2].isdigit()),
+        key=lambda p: p.name,
+    )
+
+    if not attempt_files:
+        raise FileNotFoundError("No attempt files found for this practice session.")
+
+    latest = attempt_files[-1]
+
+    success = open_editor(latest, auto_open=auto_open, editor=editor)
+
+    if success:
+        review_practice(context, slug)
+
+    return success
 
 
 def practice_metrics(context: Context) -> dict[str, int]:

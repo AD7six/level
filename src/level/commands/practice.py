@@ -20,7 +20,9 @@ from level.domains.practice import (
     lint_practice,
     list_practice,
     practice_metrics,
+    review_latest_attempt,
 )
+from level.editor import open_in_editor
 
 # ---------------------------------------------------------------------------
 # Drill list (v0.5)
@@ -85,7 +87,20 @@ def handle_practice_open(context: Context, args: argparse.Namespace) -> None:
 
 
 def handle_practice_review(context: Context, args: argparse.Namespace) -> None:
-    print("Not implemented yet.")
+    slug = args.slug
+
+    success = review_latest_attempt(
+        context,
+        slug,
+        open_editor=open_in_editor,
+        auto_open=context.config.auto_open,
+        editor=context.config.editor,
+    )
+
+    if success:
+        print(f"Reviewed practice session: {slug}")
+    else:
+        print("Review aborted; metadata not updated.")
 
 
 def handle_practice_stats(context: Context, args: argparse.Namespace) -> None:
@@ -166,7 +181,11 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     # practice review
     parser_review = practice_subparsers.add_parser(
         "review",
-        help="Review completed exercises",
+        help="Mark a practice session as reviewed",
+    )
+    parser_review.add_argument(
+        "slug",
+        help="Practice session slug",
     )
     parser_review.set_defaults(func=handle_practice_review)
 
