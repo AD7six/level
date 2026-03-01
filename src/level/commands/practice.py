@@ -72,6 +72,13 @@ def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     practice = create_practice(context, practice_date, name=name_component)
     print(f"Created practice session: {practice.slug}")
 
+    # Open the initial exercise file if configured
+    open_in_editor(
+        practice.path / "00-start.py",
+        auto_open=context.config.auto_open,
+        editor=context.config.editor,
+    )
+
 
 def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
     sessions = list(list_practice(context))
@@ -80,10 +87,6 @@ def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
         return
 
     print(render_objects(sessions, _practice_slug))
-
-
-def handle_practice_open(context: Context, args: argparse.Namespace) -> None:
-    print("Not implemented yet.")
 
 
 def handle_practice_review(context: Context, args: argparse.Namespace) -> None:
@@ -109,7 +112,7 @@ def handle_practice_stats(context: Context, args: argparse.Namespace) -> None:
         print("No practice data available.")
         return
 
-    render_list([f"{key}: {value}" for key, value in metrics.items()])
+    print(render_list([f"{key}: {value}" for key, value in metrics.items()]))
 
 
 def handle_practice_archive(context: Context, args: argparse.Namespace) -> None:
@@ -170,13 +173,6 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
         help="List exercises",
     )
     parser_list.set_defaults(func=handle_practice_list)
-
-    # practice open
-    parser_open = practice_subparsers.add_parser(
-        "open",
-        help="Open exercise workspace",
-    )
-    parser_open.set_defaults(func=handle_practice_open)
 
     # practice review
     parser_review = practice_subparsers.add_parser(
