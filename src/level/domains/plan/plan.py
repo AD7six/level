@@ -211,7 +211,8 @@ def save_plan(context: Context, plan: Plan) -> None:
     root = _plan_root(context)
     root.mkdir(parents=True, exist_ok=True)
 
-    write_meta_toml(_plan_meta_path(context), plan)
+    plan_data = {k: v for k, v in plan.__dict__.items() if k != "path"}
+    write_meta_toml(_plan_meta_path(context), plan_data)
 
     notes_path = root / "notes.md"
     if not notes_path.exists():
@@ -219,7 +220,7 @@ def save_plan(context: Context, plan: Plan) -> None:
 
 
 def _default_plan() -> Plan:
-    return Plan(path=Path())
+    return Plan()
 
 
 # ---------------------------------------------------------------------------
