@@ -7,6 +7,7 @@ from level.domains.practice import (
     fix_practice,
     lint_practice,
     list_practice,
+    review_latest_attempt,
 )
 
 
@@ -27,6 +28,8 @@ def test_create_practice_creates_directory_and_file(tmp_path):
     assert practice.slug == "2026-02-24-session"
     assert practice_dir.exists()
     assert (practice_dir / "00-start.py").exists()
+    meta = (practice_dir / "meta.toml").read_text()
+    assert "template" in meta
 
 
 def test_list_practice_returns_created_sessions(tmp_path):
@@ -128,3 +131,74 @@ def test_create_practice_collision_suffix(tmp_path):
 
     assert first.slug == "2026-03-02-session"
     assert second.slug == "2026-03-02-session-1"
+
+
+def test_list_practice_uses_meta_date_not_directory(tmp_path):
+    context = _context(tmp_path)
+
+    practice = create_practice(context, date(2026, 3, 5))
+
+    practice_root = tmp_path / "practice"
+    original = practice_root / practice.slug
+    renamed = practice_root / "renamed-folder"
+    original.rename(renamed)
+
+    sessions = list(list_practice(context))
+
+    assert len(sessions) == 1
+    assert sessions[0].date == date(2026, 3, 5)
+    assert sessions[0].slug == "renamed-folder"
+
+
+def test_review_latest_attempt_updates_meta_on_success(tmp_path):
+    context = _context(tmp_path)
+
+    practice = create_practice(context, date(2026, 3, 10))
+    practice_dir = tmp_path / "practice" / practice.slug
+
+    # create an attempt file so review_latest_attempt can find it
+    attempt = practice_dir / "01-attempt.py"
+    attempt.write_text("pass")
+
+    def fake_editor(path, *, auto_open, editor):
+        assert path == attempt
+        return True
+
+    result = review_latest_attempt(
+        context,
+        practice.slug,
+        open_editor=fake_editor,
+        auto_open=True,
+        editor="dummy",
+    )
+
+    assert result is True
+
+    meta = (practice_dir / "meta.toml").read_text()
+    assert "reviewed_count = 1" in meta
+
+
+def test_review_latest_attempt_abort_does_not_update_meta(tmp_path):
+    context = _context(tmp_path)
+
+    practice = create_practice(context, date(2026, 3, 11))
+    practice_dir = tmp_path / "practice" / practice.slug
+
+    attempt = practice_dir / "01-attempt.py"
+    attempt.write_text("pass")
+
+    def fake_editor(path, *, auto_open, editor):
+        return False
+
+    result = review_latest_attempt(
+        context,
+        practice.slug,
+        open_editor=fake_editor,
+        auto_open=True,
+        editor="dummy",
+    )
+
+    assert result is False
+
+    meta = (practice_dir / "meta.toml").read_text()
+    assert "reviewed_count = 1" not in meta

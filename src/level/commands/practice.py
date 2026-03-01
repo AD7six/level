@@ -12,14 +12,17 @@ from datetime import date
 from typing import Any
 
 from level.commands._doctor import make_doctor_handler
-from level.commands._format import render_objects
+from level.commands._format import render_list, render_objects
 from level.config import Context
 from level.domains.practice import (
     create_practice,
     fix_practice,
     lint_practice,
     list_practice,
+    practice_metrics,
+    review_latest_attempt,
 )
+from level.editor import open_in_editor
 
 # ---------------------------------------------------------------------------
 # Drill list (v0.5)
@@ -69,6 +72,14 @@ def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     practice = create_practice(context, practice_date, name=name_component)
     print(f"Created practice session: {practice.slug}")
 
+    # Open the initial exercise file if configured
+    if practice.path:
+        open_in_editor(
+            practice.path / "00-start.py",
+            auto_open=context.config.auto_open,
+            editor=context.config.editor,
+        )
+
 
 def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
     sessions = list(list_practice(context))
@@ -79,16 +90,30 @@ def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
     print(render_objects(sessions, _practice_slug))
 
 
-def handle_practice_open(context: Context, args: argparse.Namespace) -> None:
-    print("Not implemented yet.")
-
-
 def handle_practice_review(context: Context, args: argparse.Namespace) -> None:
-    print("Not implemented yet.")
+    slug = args.slug
+
+    success = review_latest_attempt(
+        context,
+        slug,
+        open_editor=open_in_editor,
+        auto_open=context.config.auto_open,
+        editor=context.config.editor,
+    )
+
+    if success:
+        print(f"Reviewed practice session: {slug}")
+    else:
+        print("Review aborted; metadata not updated.")
 
 
 def handle_practice_stats(context: Context, args: argparse.Namespace) -> None:
-    print("Not implemented yet.")
+    metrics = practice_metrics(context)
+    if not metrics:
+        print("No practice data available.")
+        return
+
+    print(render_list([f"{key}: {value}" for key, value in metrics.items()]))
 
 
 def handle_practice_archive(context: Context, args: argparse.Namespace) -> None:
@@ -150,17 +175,14 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     )
     parser_list.set_defaults(func=handle_practice_list)
 
-    # practice open
-    parser_open = practice_subparsers.add_parser(
-        "open",
-        help="Open exercise workspace",
-    )
-    parser_open.set_defaults(func=handle_practice_open)
-
     # practice review
     parser_review = practice_subparsers.add_parser(
         "review",
-        help="Review completed exercises",
+        help="Review a practice drill",
+    )
+    parser_review.add_argument(
+        "slug",
+        help="Practice session slug",
     )
     parser_review.set_defaults(func=handle_practice_review)
 

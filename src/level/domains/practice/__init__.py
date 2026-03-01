@@ -4,6 +4,9 @@ from .practice import (
     fix_practice,
     lint_practice,
     list_practice,
+    practice_metrics,
+    review_latest_attempt,
+    review_practice,
 )
 
 __all__ = [
@@ -12,4 +15,7 @@ __all__ = [
     "fix_practice",
     "lint_practice",
     "list_practice",
+    "practice_metrics",
+    "review_latest_attempt",
+    "review_practice",
 ]

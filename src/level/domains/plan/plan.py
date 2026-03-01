@@ -17,6 +17,8 @@ from level.core.meta import write_meta_toml
 
 @dataclass(frozen=True)
 class Plan:
+    path: Path | None = None
+
     target_roles: list[str] = field(
         default_factory=list,
         metadata={"comment": "Roles you are actively targeting"},
@@ -188,6 +190,7 @@ def load_plan(context: Context) -> Plan | None:
         return None
 
     return Plan(
+        path=_plan_root(context),
         target_roles=_get_list("target_roles"),
         target_industries=_get_list("target_industries"),
         target_locations=_get_list("target_locations"),
@@ -208,7 +211,8 @@ def save_plan(context: Context, plan: Plan) -> None:
     root = _plan_root(context)
     root.mkdir(parents=True, exist_ok=True)
 
-    write_meta_toml(_plan_meta_path(context), plan)
+    plan_data = {k: v for k, v in plan.__dict__.items() if k != "path"}
+    write_meta_toml(_plan_meta_path(context), plan_data)
 
     notes_path = root / "notes.md"
     if not notes_path.exists():

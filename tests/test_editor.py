@@ -12,6 +12,11 @@ def test_open_in_editor_invokes_subprocess(monkeypatch, tmp_path):
         called["cmd"] = cmd
         called["check"] = check
 
+        class Result:
+            returncode = 0
+
+        return Result()
+
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     test_file = tmp_path / "file.txt"

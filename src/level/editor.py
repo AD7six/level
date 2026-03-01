@@ -4,8 +4,9 @@ import subprocess
 from pathlib import Path
 
 
-def open_in_editor(path: Path, *, auto_open: bool, editor: str | None) -> None:
+def open_in_editor(path: Path, *, auto_open: bool, editor: str | None) -> bool:
     if not auto_open or not editor:
-        return
+        return False
 
-    subprocess.run([editor, str(path)], check=False)
+    result = subprocess.run([editor, str(path)], check=False)
+    return result.returncode == 0

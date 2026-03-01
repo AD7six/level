@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Protocol
 
 from level.checks.base import Finding, FixResult
 from level.checks.canonical_location import CanonicalLocation
@@ -18,10 +19,15 @@ from level.templates.loader import TemplateNotFoundError
 from level.templates.renderer import render_template_to_path
 
 
+class EditorOpener(Protocol):
+    def __call__(self, path: Path, *, auto_open: bool, editor: str | None) -> bool: ...
+
+
 @dataclass(frozen=True)
 class Practice:
     date: date
     slug: str
+    path: Path | None = None
 
 
 def _practice_root(context: Context) -> Path:
@@ -49,37 +55,41 @@ def create_practice(
     slug = practice_dir.name
     practice_dir.mkdir(parents=True, exist_ok=False)
 
-    # Write meta.toml
-    write_meta_toml(
-        practice_dir / "meta.toml",
-        {
-            "date": practice_date,
-            "name": name,
-        },
-    )
-
     # Prefer drill-specific template if it exists, otherwise fallback to default
-    specific_template = f"practice/{name}.py.tmpl"
+    template_used = f"practice/{name}.py.tmpl"
     output_file = practice_dir / "00-start.py"
 
     try:
         render_template_to_path(
             context=context,
-            template_name=specific_template,
+            template_name=template_used,
             variables={"date": practice_date.isoformat()},
             output_path=output_file,
             overwrite=False,
         )
     except TemplateNotFoundError:
+        template_used = "practice/default.py.tmpl"
         render_template_to_path(
             context=context,
-            template_name="practice/default.py.tmpl",
+            template_name=template_used,
             variables={"date": practice_date.isoformat()},
             output_path=output_file,
             overwrite=False,
         )
 
-    return Practice(date=practice_date, slug=slug)
+    # Write meta.toml (template recorded for future use)
+    write_meta_toml(
+        practice_dir / "meta.toml",
+        {
+            "date": practice_date,
+            "name": name,
+            "template": template_used,
+            "reviewed_count": 0,
+            "last_reviewed": None,
+        },
+    )
+
+    return Practice(date=practice_date, slug=slug, path=practice_dir)
 
 
 def list_practice(context: Context) -> Iterable[Practice]:
@@ -88,16 +98,26 @@ def list_practice(context: Context) -> Iterable[Practice]:
         if not child.is_dir():
             continue
 
-        parts = child.name.split("-", 3)
-        if len(parts) < 3:
+        meta_path = child / "meta.toml"
+        if not meta_path.exists():
             continue
 
         try:
-            practice_date = date.fromisoformat("-".join(parts[:3]))
+            with meta_path.open("rb") as f:
+                raw = tomllib.load(f)
+        except Exception:
+            continue
+
+        practice_date = raw.get("date")
+        if not practice_date:
+            continue
+
+        try:
+            parsed_date = date.fromisoformat(str(practice_date))
         except ValueError:
             continue
 
-        yield Practice(date=practice_date, slug=child.name)
+        yield Practice(date=parsed_date, slug=child.name, path=child)
 
 
 def _practice_finder(context: Context) -> Iterable[Path]:
@@ -153,3 +173,88 @@ def lint_practice(context: Context) -> list[Finding]:
 
 def fix_practice(context: Context) -> list[FixResult]:
     return fix_domain(context, _practice_domain)
+
+
+def review_practice(context: Context, slug: str) -> None:
+    """
+    Increment review frequency metadata for a practice session.
+    """
+    root = _practice_root(context)
+    practice_dir = root / slug
+
+    meta_path = practice_dir / "meta.toml"
+    if not meta_path.exists():
+        raise FileNotFoundError(f"Practice session not found: {slug}")
+
+    with meta_path.open("rb") as f:
+        raw = tomllib.load(f)
+
+    reviewed_count = int(raw.get("reviewed_count", 0)) + 1
+    raw["reviewed_count"] = reviewed_count
+    raw["last_reviewed"] = date.today()
+
+    write_meta_toml(meta_path, raw)
+
+
+def review_latest_attempt(
+    context: Context,
+    slug: str,
+    *,
+    open_editor: EditorOpener,
+    auto_open: bool,
+    editor: str | None,
+) -> bool:
+    """
+    Locate the latest attempt file for a practice session, open it in the editor,
+    and update review metadata if the edit session completes successfully.
+    """
+    root = _practice_root(context)
+    practice_dir = root / slug
+
+    if not practice_dir.exists():
+        raise FileNotFoundError(f"Practice session not found: {slug}")
+
+    attempt_files = sorted(
+        (p for p in practice_dir.glob("*.py") if p.name[:2].isdigit()),
+        key=lambda p: p.name,
+    )
+
+    if not attempt_files:
+        raise FileNotFoundError("No attempt files found for this practice session.")
+
+    latest = attempt_files[-1]
+
+    success = open_editor(latest, auto_open=auto_open, editor=editor)
+
+    if success:
+        review_practice(context, slug)
+
+    return success
+
+
+def practice_metrics(context: Context) -> dict[str, int]:
+    """
+    Minimal stats integration hook for practice domain.
+    Returns basic aggregate metrics.
+    """
+    total_sessions = 0
+    total_reviews = 0
+
+    for entity in _practice_finder(context):
+        total_sessions += 1
+        meta_path = entity / "meta.toml"
+        if not meta_path.exists():
+            continue
+
+        try:
+            with meta_path.open("rb") as f:
+                raw = tomllib.load(f)
+        except Exception:
+            continue
+
+        total_reviews += int(raw.get("reviewed_count", 0))
+
+    return {
+        "total_sessions": total_sessions,
+        "total_reviews": total_reviews,
+    }
