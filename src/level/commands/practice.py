@@ -181,7 +181,7 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     # practice review
     parser_review = practice_subparsers.add_parser(
         "review",
-        help="Mark a practice session as reviewed",
+        help="Review a practice drill",
     )
     parser_review.add_argument(
         "slug",
