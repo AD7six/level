@@ -54,8 +54,13 @@ def test_save_and_load_plan_roundtrip(tmp_path, monkeypatch):
     save_plan(context, original)
 
     loaded = load_plan(context)
+    assert loaded is not None
+    assert loaded.path is not None
+    original_with_path = Plan(
+        **{**original.__dict__, "path": loaded.path}
+    )  # Add path for equality check
 
-    assert loaded == original
+    assert loaded == original_with_path
 
 
 # ---------------------------------------------------------------------------
