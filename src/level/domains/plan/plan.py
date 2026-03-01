@@ -17,6 +17,8 @@ from level.core.meta import write_meta_toml
 
 @dataclass(frozen=True)
 class Plan:
+    path: Path | None = None
+
     target_roles: list[str] = field(
         default_factory=list,
         metadata={"comment": "Roles you are actively targeting"},
@@ -188,6 +190,7 @@ def load_plan(context: Context) -> Plan | None:
         return None
 
     return Plan(
+        path=_plan_root(context),
         target_roles=_get_list("target_roles"),
         target_industries=_get_list("target_industries"),
         target_locations=_get_list("target_locations"),
@@ -216,7 +219,7 @@ def save_plan(context: Context, plan: Plan) -> None:
 
 
 def _default_plan() -> Plan:
-    return Plan()
+    return Plan(path=Path())
 
 
 # ---------------------------------------------------------------------------

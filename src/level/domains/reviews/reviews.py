@@ -23,6 +23,7 @@ from level.templates.renderer import render_template_to_path
 class Review:
     date: date
     period: str  # "weekly" | "monthly" | "quarterly" | "annual"
+    path: Path | None = None
     wins: list[str] = field(default_factory=list)
     challenges: list[str] = field(default_factory=list)
     learnings: list[str] = field(default_factory=list)
@@ -39,7 +40,7 @@ class Review:
         }
 
     @staticmethod
-    def from_dict(data: dict[str, object]) -> Review:
+    def from_dict(data: dict[str, object], path: Path) -> Review:
         def _list_of_str(value: object) -> list[str]:
             if isinstance(value, list) and all(isinstance(x, str) for x in value):
                 return value
@@ -57,6 +58,7 @@ class Review:
         return Review(
             date=date.fromisoformat(raw_date),
             period=raw_period,
+            path=path,
             wins=_list_of_str(data.get("wins")),
             challenges=_list_of_str(data.get("challenges")),
             learnings=_list_of_str(data.get("learnings")),
@@ -150,7 +152,7 @@ def load_review(context: Context, review_date: date, period: str) -> Review:
     with meta_path.open("rb") as f:
         data = tomllib.load(f)
 
-    return Review.from_dict(data)
+    return Review.from_dict(data, _review_dir(context, review_date, period))
 
 
 def list_reviews(context: Context) -> list[Review]:
@@ -172,7 +174,7 @@ def list_reviews(context: Context) -> list[Review]:
         with meta_path.open("rb") as f:
             data = tomllib.load(f)
 
-        reviews.append(Review.from_dict(data))
+        reviews.append(Review.from_dict(data, entry))
 
     return sorted(reviews, key=lambda r: r.date, reverse=True)
 
@@ -203,7 +205,7 @@ def _reviews_canonical_rel(context: Context, entity: Path) -> Path | None:
     try:
         with meta_path.open("rb") as f:
             data = tomllib.load(f)
-        review = Review.from_dict(data)
+        review = Review.from_dict(data, entity)
     except Exception:
         return None
 

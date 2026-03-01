@@ -27,6 +27,7 @@ class EditorOpener(Protocol):
 class Practice:
     date: date
     slug: str
+    path: Path | None = None
 
 
 def _practice_root(context: Context) -> Path:
@@ -88,7 +89,7 @@ def create_practice(
         },
     )
 
-    return Practice(date=practice_date, slug=slug)
+    return Practice(date=practice_date, slug=slug, path=practice_dir)
 
 
 def list_practice(context: Context) -> Iterable[Practice]:
@@ -116,7 +117,7 @@ def list_practice(context: Context) -> Iterable[Practice]:
         except ValueError:
             continue
 
-        yield Practice(date=parsed_date, slug=child.name)
+        yield Practice(date=parsed_date, slug=child.name, path=child)
 
 
 def _practice_finder(context: Context) -> Iterable[Path]:

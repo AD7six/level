@@ -41,10 +41,10 @@ TRANSITIONS: dict[str, set[str]] = {
 class Application:
     slug: str
     state: str
-    path: Path
     company: str
     role: str
     created_at: str
+    path: Path | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -260,6 +260,7 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
     if new_state not in TRANSITIONS[app.state]:
         raise ValueError(f"Invalid transition: {app.state} → {new_state}")
 
+    assert app.path is not None
     raw = _load_meta(app.path)
     meta = ApplicationMeta.from_dict(raw)
 
@@ -272,6 +273,7 @@ def move_application(context: Context, slug: str, new_state: str) -> Application
     )
 
     target.parent.mkdir(parents=True, exist_ok=True)
+    assert app.path is not None
     app.path.rename(target)
 
     return Application(
