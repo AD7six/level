@@ -129,7 +129,6 @@ def test_create_practice_collision_suffix(tmp_path):
     first = create_practice(context, date(2026, 3, 2))
     second = create_practice(context, date(2026, 3, 2))
 
-
     assert first.slug == "2026-03-02-session"
     assert second.slug == "2026-03-02-session-1"
 
