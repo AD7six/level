@@ -73,11 +73,12 @@ def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     print(f"Created practice session: {practice.slug}")
 
     # Open the initial exercise file if configured
-    open_in_editor(
-        practice.path / "00-start.py",
-        auto_open=context.config.auto_open,
-        editor=context.config.editor,
-    )
+    if practice.path:
+        open_in_editor(
+            practice.path / "00-start.py",
+            auto_open=context.config.auto_open,
+            editor=context.config.editor,
+        )
 
 
 def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
