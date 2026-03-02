@@ -50,7 +50,8 @@ def test_run_interview_phases_pass(capsys):
     captured = capsys.readouterr()
     assert "Phase 1" in captured.out
     assert "Phase 2" in captured.out
-    assert "tests passed" in captured.out
+    assert "Phase 1 passed" in captured.out
+    assert "Phase 2 passed" in captured.out
 
 
 def test_run_interview_phase_gating(capsys):
