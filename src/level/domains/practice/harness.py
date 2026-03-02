@@ -4,7 +4,9 @@ from collections.abc import Callable, Iterable, Sequence
 from typing import Any
 
 
-def _normalize_case(case: tuple[Any, ...] | tuple[Any, Any] | tuple[Any, Any, str]) -> tuple[Sequence[Any], Any, str]:
+def _normalize_case(
+    case: tuple[Any, ...] | tuple[Any, Any] | tuple[Any, Any, str],
+) -> tuple[Sequence[Any], Any, str]:
     """Normalize test definitions so authors can write shorter cases."""
 
     if len(case) == 2:
@@ -19,7 +21,7 @@ def _normalize_case(case: tuple[Any, ...] | tuple[Any, Any] | tuple[Any, Any, st
     return inputs, expected, message
 
 
-def _resolve_cases(cases: Iterable | Callable[[], Iterable]) -> list[Any]:
+def _resolve_cases(cases: Iterable[Any] | Callable[[], Iterable[Any]]) -> list[Any]:
     """Allow phases to provide either a list or a generator function."""
 
     if callable(cases):
@@ -157,11 +159,16 @@ def run_interview(
         if passed == total:
             if is_last_phase:
                 print()
-            print(f"✓ Phase {phase_index} passed ({passed}/{total}) in {total_duration:.3f}ms")
+            print(
+                f"✓ Phase {phase_index} passed ({passed}/{total}) in "
+                f"{total_duration:.3f}ms"
+            )
             continue
 
         print()
-        print(f"✗ Phase {phase_index} failed ({passed}/{total}) in {total_duration:.3f}ms")
+        print(
+            f"✗ Phase {phase_index} failed ({passed}/{total}) in {total_duration:.3f}ms"
+        )
         return False
 
     if followups:
