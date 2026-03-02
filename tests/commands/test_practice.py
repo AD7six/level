@@ -30,6 +30,9 @@ def test_practice_new_prints_created_slug(tmp_path, capsys, monkeypatch):
             slug = "2026-02-24-code-session"
             path = tmp_path / "practice" / "2026-02-24-code-session"
 
+            def start_file(self):
+                return Path(self.path / "exercise.py")
+
         return DummyPractice()
 
     monkeypatch.setattr(
