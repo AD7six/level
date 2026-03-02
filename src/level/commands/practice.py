@@ -19,6 +19,8 @@ from level.domains.practice import (
     fix_practice,
     lint_practice,
     list_practice,
+    list_practice_languages,
+    list_practice_types,
     practice_metrics,
     review_latest_attempt,
 )
@@ -61,12 +63,32 @@ def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     practice_date = date.fromisoformat(args.date) if args.date else None
     practice_type = getattr(args, "type", None) or "code"
 
+    language = getattr(args, "language", "python")
+
+    valid_types = set(list_practice_types(context))
+    if practice_type not in valid_types:
+        raise ValueError(
+            f"Unknown practice type: {practice_type}. Valid types: {valid_types}"
+        )
+
+    valid_languages = set(list_practice_languages(context))
+    if language not in valid_languages:
+        raise ValueError(
+            f"Unknown language: {language}. Valid languages: {valid_languages}"
+        )
+
     if getattr(args, "random", False):
         name = random.choice(DRILLS)
     else:
         name = getattr(args, "name", None) or "session"
 
-    practice = create_practice(context, practice_date, name=name, practice_type=practice_type)
+    practice = create_practice(
+        context,
+        practice_date,
+        name=name,
+        practice_type=practice_type,
+        language=language,
+    )
     print(f"Created practice session: {practice.slug}")
 
     # Open the initial exercise file if configured
@@ -159,6 +181,12 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
         "--type",
         default="code",
         help="Exercise type (default: code)",
+    )
+    parser_new.add_argument(
+        "--language",
+        "-l",
+        default="python",
+        help="Language to use for the practice template",
     )
     parser_new.add_argument(
         "--date",

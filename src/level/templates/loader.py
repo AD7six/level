@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from importlib import resources
 from importlib.resources import as_file
 from importlib.resources.abc import Traversable
 from pathlib import Path
-from typing import Iterable
 
 from level.config import Context, get_data_root
 

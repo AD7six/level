@@ -15,7 +15,7 @@ from level.config import Context
 from level.core.canonical import build_slug, resolve_collision
 from level.core.doctor import Domain, fix_domain, lint_domain
 from level.core.meta import write_meta_toml
-from level.templates.loader import TemplateNotFoundError, list_templates
+from level.templates.loader import list_templates
 from level.templates.renderer import render_template_to_path
 
 
@@ -55,7 +55,6 @@ def _practice_root(context: Context) -> Path:
     return root
 
 
-
 def _practice_slug(practice_date: date, name: str) -> str:
     return build_slug(practice_date, name)
 
@@ -76,7 +75,6 @@ def list_practice_languages(context: Context) -> list[str]:
     """Return distinct languages derived from template filename extensions."""
     langs: set[str] = set()
 
-
     for tmpl in list_templates(context, "practice"):
         suffixes = Path(tmpl).suffixes
         if len(suffixes) >= 2:
@@ -94,7 +92,9 @@ def create_practice(
     language: str = "python",
 ) -> Practice:
     practice_date = practice_date or date.today()
-    ext = EXTENSIONS.get(language, language) # Default to language as extension if not in mapping
+    ext = EXTENSIONS.get(
+        language, language
+    )  # Default to language as extension if not in mapping
     root = _practice_root(context)
 
     base_slug = _practice_slug(practice_date, name)
@@ -109,8 +109,8 @@ def create_practice(
     candidates = [
         f"{name}.{ext}.tmpl",
         f"{name}.md.tmpl",
-        f"default.{ext}.tmpl",
-        f"default.md.tmpl", # Type-specific fallback
+        f"default.{ext}.tmpl", # Type+language-specific fallback
+        "default.md.tmpl",  # Type-specific fallback
     ]
 
     template_used = None

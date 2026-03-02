@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
 from string import Template
+from typing import Any
 
 from level.config import Context
 
