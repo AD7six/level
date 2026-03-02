@@ -61,21 +61,8 @@ def _practice_slug(session: object) -> str:
 
 def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     practice_date = date.fromisoformat(args.date) if args.date else None
-    practice_type = getattr(args, "type", None) or "code"
-
+    practice_type = getattr(args, "type", "code")
     language = getattr(args, "language", "python")
-
-    valid_types = set(list_practice_types(context))
-    if practice_type not in valid_types:
-        raise ValueError(
-            f"Unknown practice type: {practice_type}. Valid types: {valid_types}"
-        )
-
-    valid_languages = set(list_practice_languages(context))
-    if language not in valid_languages:
-        raise ValueError(
-            f"Unknown language: {language}. Valid languages: {valid_languages}"
-        )
 
     if getattr(args, "random", False):
         name = random.choice(DRILLS)
