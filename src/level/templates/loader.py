@@ -130,6 +130,7 @@ def list_templates(context: Context, subdir: str) -> Iterable[str]:
     templates = _collect_templates(context, subdir)
     return templates.keys()
 
+
 def list_template_dirs(context: Context, subdir: str) -> Iterable[str]:
     """
     Return top-level template directories under a given subdirectory.
