@@ -97,7 +97,7 @@ def _practice_slug(session: object) -> str:
 def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     practice_date = date.fromisoformat(args.date) if args.date else None
     practice_type = args.type
-    language = getattr(args, "language", "python")
+    language = args.language
 
     if getattr(args, "random", False):
         name = random.choice(DRILLS)
