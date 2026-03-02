@@ -44,6 +44,7 @@ def _practice_slug(practice_date: date, name: str) -> str:
 def create_practice(
     context: Context,
     practice_date: date | None = None,
+    practice_type: str = "code",
     name: str = "session",
 ) -> Practice:
     practice_date = practice_date or date.today()
@@ -56,32 +57,34 @@ def create_practice(
     practice_dir.mkdir(parents=True, exist_ok=False)
 
     # Prefer drill-specific template if it exists, otherwise fallback to default
-    template_used = f"practice/{name}.py.tmpl"
+    templates = [
+        f"practice/{practice_type}/{name}.py.tmpl",
+        f"practice/{practice_type}/default.py.tmpl",
+        "practice/default.py.tmpl",
+    ]
     output_file = practice_dir / "00-start.py"
 
-    try:
-        render_template_to_path(
-            context=context,
-            template_name=template_used,
-            variables={"date": practice_date.isoformat()},
-            output_path=output_file,
-            overwrite=False,
-        )
-    except TemplateNotFoundError:
-        template_used = "practice/default.py.tmpl"
-        render_template_to_path(
-            context=context,
-            template_name=template_used,
-            variables={"date": practice_date.isoformat()},
-            output_path=output_file,
-            overwrite=False,
-        )
+    template_used = ""
+    for template_name in templates:
+        template_used = template_name  # Record which template was used for meta
+        try:
+            render_template_to_path(
+                context=context,
+                template_name=template_name,
+                variables={"date": practice_date.isoformat()},
+                output_path=output_file,
+                overwrite=False,
+            )
+            break  # Stop after successfully rendering a template
+        except TemplateNotFoundError:
+            continue
 
     # Write meta.toml (template recorded for future use)
     write_meta_toml(
         practice_dir / "meta.toml",
         {
             "date": practice_date,
+            "type": practice_type,
             "name": name,
             "template": template_used,
             "reviewed_count": 0,
