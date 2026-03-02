@@ -168,7 +168,7 @@ def handle_practice_types(context: Context, args: argparse.Namespace) -> None:
         print("No practice types available.")
         return
 
-    print(render_list(types))
+    print(render_list(sorted(types)))
 
 
 def handle_practice_languages(context: Context, args: argparse.Namespace) -> None:
@@ -177,7 +177,7 @@ def handle_practice_languages(context: Context, args: argparse.Namespace) -> Non
         print("No practice languages available.")
         return
 
-    print(render_list(languages))
+    print(render_list(sorted(languages)))
 
 
 def handle_practice_templates(context: Context, args: argparse.Namespace) -> None:
@@ -187,7 +187,7 @@ def handle_practice_templates(context: Context, args: argparse.Namespace) -> Non
         print("No practice templates available.")
         return
 
-    print(render_list(templates))
+    print(render_list(sorted(templates)))
 
 
 # ---------------------------------------------------------------------------
