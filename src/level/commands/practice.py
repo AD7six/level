@@ -100,7 +100,10 @@ def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     if getattr(args, "random", False):
         name = random.choice(DRILLS)
     else:
-        name = getattr(args, "name", "exercise")
+        name = getattr(args, "name", None)
+        if not name:
+            print("Error: you must provide a name or use --random.")
+            return
 
     practice = create_practice(
         context,
