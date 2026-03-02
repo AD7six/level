@@ -12,7 +12,7 @@ Examples:
 - Output:
 """
 
-from level.practice.harness import run_tests
+from level.domains.practice.harness import run_interview
 
 def solve(*args):
     """
@@ -28,16 +28,31 @@ def solve(*args):
 
 
 def main():
-    test_cases = [
-        # (input_args_tuple, expected_output, message)
-        # ((...), ..., "Simplest example"),
-        # ((...), ..., "Simple example"),
-        # ((...), ..., "More complex example"),
-        # ((...), ..., "Very complex example"),
-        # ((...), ..., "etc. covering all edge cases"),
-        (([]), [], "Empty input so tests fail until you implement the solution"),
+    phases = [
+        (
+            "Base problem",
+            [
+                # (input_args_tuple, expected_output, message)
+                # ((...), ..., "Simplest example"),
+                # ((...), ..., "Simple example"),
+                (([],), [], "Empty input so tests fail until you implement the solution"),
+            ],
+        ),
+        (
+            "Twist 1",
+            [
+                # Add new constraints here after base problem passes
+            ],
+        ),
+        (
+            "Twist 2",
+            [
+                # Harder constraint or performance requirement
+            ],
+        ),
     ]
-    run_tests(solve, test_cases)
+
+    run_interview(solve, phases)
 
 if __name__ == "__main__":
     main()
