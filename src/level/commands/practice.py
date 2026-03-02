@@ -85,8 +85,8 @@ DRILLS = [
 ]
 
 
-def _practice_slug(session: object) -> str:
-    return str(getattr(session, "slug", session))
+def _practice_slug(exercise: object) -> str:
+    return str(getattr(exercise, "slug", exercise))
 
 
 # ---------------------------------------------------------------------------
@@ -102,7 +102,7 @@ def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     if getattr(args, "random", False):
         name = random.choice(DRILLS)
     else:
-        name = getattr(args, "name", None) or "session"
+        name = getattr(args, "name", "exercise")
 
     practice = create_practice(
         context,
@@ -111,7 +111,7 @@ def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
         practice_type=practice_type,
         language=language,
     )
-    print(f"Created practice session: {practice.slug}")
+    print(f"Created practice exercise: {practice.slug}")
 
     # Open the initial exercise file if configured
     start_file = practice.start_file()
@@ -124,12 +124,12 @@ def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
 
 
 def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
-    sessions = list(list_practice(context))
-    if not sessions:
-        print("No practice sessions found.")
+    exercises = list(list_practice(context))
+    if not exercises:
+        print("No practice exercises found.")
         return
 
-    print(render_objects(sessions, _practice_slug))
+    print(render_objects(exercises, _practice_slug))
 
 
 def handle_practice_review(context: Context, args: argparse.Namespace) -> None:
@@ -144,7 +144,7 @@ def handle_practice_review(context: Context, args: argparse.Namespace) -> None:
     )
 
     if success:
-        print(f"Reviewed practice session: {slug}")
+        print(f"Reviewed practice exercise: {slug}")
     else:
         print("Review aborted; metadata not updated.")
 
@@ -261,7 +261,7 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     )
     parser_review.add_argument(
         "slug",
-        help="Practice session slug",
+        help="Practice exercise slug",
     )
     parser_review.set_defaults(func=handle_practice_review)
 

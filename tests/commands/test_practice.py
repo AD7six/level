@@ -27,8 +27,8 @@ def test_practice_new_prints_created_slug(tmp_path, capsys, monkeypatch):
 
     def fake_create(context_arg, practice_date, **kwargs):
         class DummyPractice:
-            slug = "2026-02-24-code-session"
-            path = tmp_path / "practice" / "2026-02-24-code-session"
+            slug = "2026-02-24-exercise"
+            path = tmp_path / "practice" / "2026-02-24-exercise"
 
             def start_file(self):
                 return Path(self.path / "exercise.py")
@@ -51,7 +51,7 @@ def test_practice_new_prints_created_slug(tmp_path, capsys, monkeypatch):
     practice_cmd.handle_practice_new(context, args)
 
     output = capsys.readouterr().out
-    assert "Created practice session: 2026-02-24-code-session" in output
+    assert "Created practice exercise: 2026-02-24-exercise" in output
 
 
 # ---------------------------------------------------------------------------
@@ -88,7 +88,7 @@ def test_practice_list_empty(tmp_path, capsys, monkeypatch):
     practice_cmd.handle_practice_list(context, Namespace())
 
     output = capsys.readouterr().out.strip()
-    assert output == "No practice sessions found."
+    assert output == "No practice exercises found."
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +109,7 @@ def test_practice_review_success(tmp_path, capsys, monkeypatch):
     practice_cmd.handle_practice_review(context, args)
 
     output = capsys.readouterr().out.strip()
-    assert output == "Reviewed practice session: abc"
+    assert output == "Reviewed practice exercise: abc"
 
 
 def test_practice_review_abort(tmp_path, capsys, monkeypatch):
