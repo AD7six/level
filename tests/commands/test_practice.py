@@ -45,7 +45,10 @@ def test_practice_new_prints_created_slug(tmp_path, capsys, monkeypatch):
     )
 
     args = Namespace(
-        date="2026-02-24", name=None, random=False, type="code", language="python"
+        date="2026-02-24",
+        name="exercise",
+        random=False,
+        type="code",
     )
 
     practice_cmd.handle_practice_new(context, args)

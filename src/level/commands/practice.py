@@ -97,13 +97,13 @@ def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     practice_date = date.fromisoformat(args.date) if args.date else None
     practice_type = args.type
 
-    if getattr(args, "random", False):
-        name = random.choice(DRILLS)
+    if args.random:
+        name: str = random.choice(DRILLS)
     else:
-        name = getattr(args, "name", None)
-        if not name:
+        if not args.name:
             print("Error: you must provide a name or use --random.")
             return
+        name = args.name
 
     practice = create_practice(
         context,
@@ -116,11 +116,17 @@ def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     # Open the initial exercise file if configured
     start_file = practice.start_file()
     if start_file:
-        open_in_editor(
-            start_file,
-            auto_open=context.config.auto_open,
-            editor=context.config.editor,
-        )
+        try:
+            open_in_editor(
+                start_file,
+                auto_open=context.config.auto_open,
+                editor=context.config.editor,
+            )
+        except FileNotFoundError:
+            print(
+                f"Warning: editor '{context.config.editor}' not found. "
+                "Exercise created but not opened."
+            )
 
 
 def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
