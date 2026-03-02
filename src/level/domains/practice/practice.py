@@ -65,7 +65,8 @@ def list_practice_types(context: Context) -> list[str]:
 
     for tmpl in list_templates(context, "practice"):
         parts = tmpl.split("/")
-        if parts:
+        # Only consider templates inside a type directory (e.g. code/default.py.tmpl)
+        if len(parts) > 1:
             types.add(parts[0])
 
     return sorted(types)
