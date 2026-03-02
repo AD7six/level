@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from string import Template
 from typing import Any
 
 from level.config import Context
@@ -15,11 +16,6 @@ class TemplateRenderError(ValueError):
     """Raised when template rendering fails due to missing variables."""
 
 
-class _SafeDict(dict[str, Any]):
-    def __missing__(self, key: str) -> str:
-        return "{" + key + "}"
-
-
 def render_template_to_string(
     context: Context,
     template_name: str,
@@ -29,7 +25,7 @@ def render_template_to_string(
     """
     Render a named template using the provided context.
 
-    Uses Python's built-in str.format().
+    Uses Python's string.Template for variable substitution.
 
     Raises:
         TemplateRenderError if required template variables are missing.
@@ -39,9 +35,11 @@ def render_template_to_string(
 
     logger.debug(f"Loaded template: {template_name}")
 
+    tmpl = Template(template)
+
     if strict:
         try:
-            result = template.format(**variables)
+            result = tmpl.substitute(variables)
             logger.debug(f"Strict render successful for template: {template_name}")
             return result
         except KeyError as exc:
@@ -49,7 +47,7 @@ def render_template_to_string(
             raise TemplateRenderError(f"Missing template variable: {missing}") from exc
 
     # Non-strict mode (default): leave unknown placeholders untouched
-    result = template.format_map(_SafeDict(variables))
+    result = tmpl.safe_substitute(variables)
     logger.debug(f"Lax render completed for template: {template_name}")
     return result
 
@@ -129,16 +127,18 @@ def render_template_directory(
 
         template_text = template_path.read_text(encoding="utf-8")
 
+        tmpl = Template(template_text)
+
         if strict:
             try:
-                rendered = template_text.format(**variables)
+                rendered = tmpl.substitute(variables)
             except KeyError as exc:
                 missing = exc.args[0]
                 raise TemplateRenderError(
                     f"Missing template variable: {missing}"
                 ) from exc
         else:
-            rendered = template_text.format_map(_SafeDict(variables))
+            rendered = tmpl.safe_substitute(variables)
 
         target_path.write_text(rendered, encoding="utf-8")
         logger.debug(f"Wrote rendered file: {target_path}")

@@ -25,39 +25,48 @@ def _write_template(tmp_path: Path, rel: str, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def test_render_template_to_string_lax(tmp_path):
+@pytest.mark.parametrize(
+    "template,variables,strict,expected,raises",
+    [
+        (
+            "Hello ${name} ${missing}",
+            {"name": "World"},
+            False,
+            "Hello World ${missing}",
+            None,
+        ),
+        ("Hello ${name}", {}, True, None, TemplateRenderError),
+    ],
+)
+def test_render_template_to_string_modes(
+    tmp_path, template, variables, strict, expected, raises
+):
     context = _context(tmp_path)
 
-    _write_template(tmp_path, "example.txt.tmpl", "Hello {name} {missing}")
+    _write_template(tmp_path, "example.txt.tmpl", template)
 
-    result = render_template_to_string(
-        context,
-        "example.txt.tmpl",
-        {"name": "World"},
-        strict=False,
-    )
-
-    assert result == "Hello World {missing}"
-
-
-def test_render_template_to_string_strict_missing(tmp_path):
-    context = _context(tmp_path)
-
-    _write_template(tmp_path, "example.txt.tmpl", "Hello {name}")
-
-    with pytest.raises(TemplateRenderError):
-        render_template_to_string(
+    if raises:
+        with pytest.raises(raises):
+            render_template_to_string(
+                context,
+                "example.txt.tmpl",
+                variables,
+                strict=strict,
+            )
+    else:
+        result = render_template_to_string(
             context,
             "example.txt.tmpl",
-            {},
-            strict=True,
+            variables,
+            strict=strict,
         )
+        assert result == expected
 
 
 def test_render_template_to_path_writes_file(tmp_path):
     context = _context(tmp_path)
 
-    _write_template(tmp_path, "example.txt.tmpl", "Value: {x}")
+    _write_template(tmp_path, "example.txt.tmpl", "Value: ${x}")
 
     output = tmp_path / "out.txt"
 
@@ -95,8 +104,13 @@ def test_render_template_to_path_respects_overwrite(tmp_path):
 def test_render_template_directory(tmp_path):
     context = _context(tmp_path)
 
-    _write_template(tmp_path, "dir/a.txt.tmpl", "A {v}")
-    _write_template(tmp_path, "dir/sub/b.txt.tmpl", "B {v}")
+    files = {
+        "dir/a.txt.tmpl": "A ${v}",
+        "dir/sub/b.txt.tmpl": "B ${v}",
+    }
+
+    for rel, content in files.items():
+        _write_template(tmp_path, rel, content)
 
     output_dir = tmp_path / "rendered"
 

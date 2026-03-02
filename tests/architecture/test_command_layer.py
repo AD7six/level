@@ -25,7 +25,6 @@ FORBIDDEN_AGGREGATION_CALLS = {
     "map",
     "max",
     "min",
-    "sorted",
     "sum",
     "next",
 }

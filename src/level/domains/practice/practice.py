@@ -15,7 +15,7 @@ from level.config import Context
 from level.core.canonical import build_slug, resolve_collision
 from level.core.doctor import Domain, fix_domain, lint_domain
 from level.core.meta import write_meta_toml
-from level.templates.loader import TemplateNotFoundError
+from level.templates.loader import list_templates
 from level.templates.renderer import render_template_to_path
 
 
@@ -23,11 +23,29 @@ class EditorOpener(Protocol):
     def __call__(self, path: Path, *, auto_open: bool, editor: str | None) -> bool: ...
 
 
+EXTENSIONS: dict[str, str] = {
+    "python": "py",
+    "go": "go",
+    "rust": "rs",
+    "java": "java",
+}
+
+# Build reverse lookup: extension -> language
+LANGUAGES = {ext: lang for lang, ext in EXTENSIONS.items()}
+
+
 @dataclass(frozen=True)
 class Practice:
     date: date
     slug: str
     path: Path | None = None
+    template: str | None = None
+    start_filename: str | None = None
+
+    def start_file(self) -> Path | None:
+        if self.path is None or self.start_filename is None:
+            return None
+        return self.path / self.start_filename
 
 
 def _practice_root(context: Context) -> Path:
@@ -41,12 +59,46 @@ def _practice_slug(practice_date: date, name: str) -> str:
     return build_slug(practice_date, name)
 
 
+def list_practice_types(context: Context) -> list[str]:
+    """Return distinct practice types derived from template paths."""
+    types: set[str] = set()
+
+    for tmpl in list_templates(context, "practice"):
+        parts = tmpl.split("/")
+        # Only consider templates inside a type directory (e.g. code/default.py.tmpl)
+        if len(parts) > 1:
+            types.add(parts[0])
+
+    return sorted(types)
+
+
+def list_practice_languages(context: Context) -> list[str]:
+    """Return distinct languages derived from template filename extensions."""
+    langs: set[str] = set()
+
+    for tmpl in list_templates(context, "practice"):
+        suffixes = Path(tmpl).suffixes
+        if len(suffixes) >= 2:
+            ext = suffixes[-2].lstrip(".")
+            # Ignore markdown templates which are generic fallbacks
+            if ext == "md":
+                continue
+            langs.add(LANGUAGES.get(ext, ext))
+
+    return sorted(langs)
+
+
 def create_practice(
     context: Context,
     practice_date: date | None = None,
+    practice_type: str = "code",
     name: str = "session",
+    language: str = "python",
 ) -> Practice:
     practice_date = practice_date or date.today()
+    ext = EXTENSIONS.get(
+        language, language
+    )  # Default to language as extension if not in mapping
     root = _practice_root(context)
 
     base_slug = _practice_slug(practice_date, name)
@@ -55,41 +107,61 @@ def create_practice(
     slug = practice_dir.name
     practice_dir.mkdir(parents=True, exist_ok=False)
 
-    # Prefer drill-specific template if it exists, otherwise fallback to default
-    template_used = f"practice/{name}.py.tmpl"
-    output_file = practice_dir / "00-start.py"
+    # Collect available templates for this practice type
+    available = set(list_templates(context, f"practice/{practice_type}"))
 
-    try:
-        render_template_to_path(
-            context=context,
-            template_name=template_used,
-            variables={"date": practice_date.isoformat()},
-            output_path=output_file,
-            overwrite=False,
-        )
-    except TemplateNotFoundError:
-        template_used = "practice/default.py.tmpl"
-        render_template_to_path(
-            context=context,
-            template_name=template_used,
-            variables={"date": practice_date.isoformat()},
-            output_path=output_file,
-            overwrite=False,
-        )
+    candidates = [
+        f"{name}.{ext}.tmpl",
+        f"{name}.md.tmpl",
+        f"default.{ext}.tmpl",  # Type+language-specific fallback
+        "default.md.tmpl",  # Type-specific fallback
+    ]
+
+    template_used = None
+    for candidate in candidates:
+        if candidate in available:
+            template_used = f"practice/{practice_type}/{candidate}"
+            break
+
+    # Final guaranteed fallback
+    if template_used is None:
+        template_used = "practice/default.md.tmpl"
+
+    # Derive output extension from template name
+    suffixes = Path(template_used).suffixes
+    ext = suffixes[-2] if len(suffixes) >= 2 else ""
+    output_file = practice_dir / f"00-start{ext}"
+
+    render_template_to_path(
+        context=context,
+        template_name=template_used,
+        variables={"date": practice_date.isoformat()},
+        output_path=output_file,
+        overwrite=False,
+    )
 
     # Write meta.toml (template recorded for future use)
     write_meta_toml(
         practice_dir / "meta.toml",
         {
             "date": practice_date,
+            "type": practice_type,
             "name": name,
+            "language": language,
             "template": template_used,
+            "start_file": output_file.name,
             "reviewed_count": 0,
             "last_reviewed": None,
         },
     )
 
-    return Practice(date=practice_date, slug=slug, path=practice_dir)
+    return Practice(
+        date=practice_date,
+        slug=slug,
+        path=practice_dir,
+        template=template_used,
+        start_filename=output_file.name,
+    )
 
 
 def list_practice(context: Context) -> Iterable[Practice]:
@@ -117,7 +189,13 @@ def list_practice(context: Context) -> Iterable[Practice]:
         except ValueError:
             continue
 
-        yield Practice(date=parsed_date, slug=child.name, path=child)
+        yield Practice(
+            date=parsed_date,
+            slug=child.name,
+            path=child,
+            template=raw.get("template"),
+            start_filename=raw.get("start_file"),
+        )
 
 
 def _practice_finder(context: Context) -> Iterable[Path]:

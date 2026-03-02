@@ -8,21 +8,58 @@ from __future__ import annotations
 
 import argparse
 import random
+from collections.abc import Callable
 from datetime import date
+from functools import lru_cache
 from typing import Any
 
 from level.commands._doctor import make_doctor_handler
 from level.commands._format import render_list, render_objects
-from level.config import Context
+from level.config import Context, build_context
 from level.domains.practice import (
     create_practice,
     fix_practice,
     lint_practice,
     list_practice,
+    list_practice_languages,
+    list_practice_types,
     practice_metrics,
     review_latest_attempt,
 )
 from level.editor import open_in_editor
+from level.templates.loader import list_templates
+
+
+@lru_cache(maxsize=1)
+def _context_for_help() -> Context:
+    """Build the CLI context once for dynamic help discovery."""
+    return build_context()
+
+
+# ---------------------------------------------------------------------------
+# LazyValue helper
+# ---------------------------------------------------------------------------
+
+
+class LazyValue:
+    """Defers computation until converted to string (used for argparse help)."""
+
+    def __init__(self, fn: Callable[[], Any]) -> None:
+        self.fn = fn
+        self._cached: str | None = None
+
+    def __str__(self) -> str:
+        if self._cached is None:
+            try:
+                value = self.fn()
+                if isinstance(value, (list, tuple, set)):
+                    self._cached = ", ".join(str(v) for v in value)
+                else:
+                    self._cached = str(value)
+            except Exception:
+                self._cached = ""
+        return self._cached
+
 
 # ---------------------------------------------------------------------------
 # Drill list (v0.5)
@@ -48,8 +85,8 @@ DRILLS = [
 ]
 
 
-def _practice_slug(session: object) -> str:
-    return str(getattr(session, "slug", session))
+def _practice_slug(exercise: object) -> str:
+    return str(getattr(exercise, "slug", exercise))
 
 
 # ---------------------------------------------------------------------------
@@ -59,35 +96,40 @@ def _practice_slug(session: object) -> str:
 
 def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     practice_date = date.fromisoformat(args.date) if args.date else None
-
-    practice_type = getattr(args, "type", None) or "code"
+    practice_type = args.type
+    language = args.language
 
     if getattr(args, "random", False):
-        selected = random.choice(DRILLS)
+        name = random.choice(DRILLS)
     else:
-        selected = getattr(args, "name", None) or "session"
+        name = getattr(args, "name", "exercise")
 
-    name_component = f"{practice_type}-{selected}"
-
-    practice = create_practice(context, practice_date, name=name_component)
-    print(f"Created practice session: {practice.slug}")
+    practice = create_practice(
+        context,
+        practice_date,
+        name=name,
+        practice_type=practice_type,
+        language=language,
+    )
+    print(f"Created practice exercise: {practice.slug}")
 
     # Open the initial exercise file if configured
-    if practice.path:
+    start_file = practice.start_file()
+    if start_file:
         open_in_editor(
-            practice.path / "00-start.py",
+            start_file,
             auto_open=context.config.auto_open,
             editor=context.config.editor,
         )
 
 
 def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
-    sessions = list(list_practice(context))
-    if not sessions:
-        print("No practice sessions found.")
+    exercises = list(list_practice(context))
+    if not exercises:
+        print("No practice exercises found.")
         return
 
-    print(render_objects(sessions, _practice_slug))
+    print(render_objects(exercises, _practice_slug))
 
 
 def handle_practice_review(context: Context, args: argparse.Namespace) -> None:
@@ -102,7 +144,7 @@ def handle_practice_review(context: Context, args: argparse.Namespace) -> None:
     )
 
     if success:
-        print(f"Reviewed practice session: {slug}")
+        print(f"Reviewed practice exercise: {slug}")
     else:
         print("Review aborted; metadata not updated.")
 
@@ -120,6 +162,34 @@ def handle_practice_archive(context: Context, args: argparse.Namespace) -> None:
     print("Not implemented yet.")
 
 
+def handle_practice_types(context: Context, args: argparse.Namespace) -> None:
+    types = list_practice_types(context)
+    if not types:
+        print("No practice types available.")
+        return
+
+    print(render_list(sorted(types)))
+
+
+def handle_practice_languages(context: Context, args: argparse.Namespace) -> None:
+    languages = list_practice_languages(context)
+    if not languages:
+        print("No practice languages available.")
+        return
+
+    print(render_list(sorted(languages)))
+
+
+def handle_practice_templates(context: Context, args: argparse.Namespace) -> None:
+
+    templates = list_templates(context, "practice")
+    if not templates:
+        print("No practice templates available.")
+        return
+
+    print(render_list(sorted(templates)))
+
+
 # ---------------------------------------------------------------------------
 # Doctor Handler
 # ---------------------------------------------------------------------------
@@ -135,6 +205,7 @@ handle_practice_doctor = make_doctor_handler(
 
 
 def register(subparsers: argparse._SubParsersAction[Any]) -> None:
+
     practice_parser = subparsers.add_parser(
         "practice",
         help="Interview practice commands",
@@ -160,7 +231,15 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     parser_new.add_argument(
         "--type",
         default="code",
-        help="Exercise type (default: code)",
+        help="Exercise type "
+        f"({LazyValue(lambda: list_practice_types(_context_for_help()))})",
+    )
+    parser_new.add_argument(
+        "--language",
+        "-l",
+        default="python",
+        help="Language or extension for the exercise "
+        f"({LazyValue(lambda: list_practice_languages(_context_for_help()))})",
     )
     parser_new.add_argument(
         "--date",
@@ -182,7 +261,7 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
     )
     parser_review.add_argument(
         "slug",
-        help="Practice session slug",
+        help="Practice exercise slug",
     )
     parser_review.set_defaults(func=handle_practice_review)
 
@@ -199,6 +278,27 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
         help="Archive old exercises",
     )
     parser_archive.set_defaults(func=handle_practice_archive)
+
+    # practice templates
+    parser_templates = practice_subparsers.add_parser(
+        "templates",
+        help="List available practice templates",
+    )
+    parser_templates.set_defaults(func=handle_practice_templates)
+
+    # practice types
+    parser_types = practice_subparsers.add_parser(
+        "types",
+        help="List available practice types",
+    )
+    parser_types.set_defaults(func=handle_practice_types)
+
+    # practice languages
+    parser_languages = practice_subparsers.add_parser(
+        "languages",
+        help="List available practice languages",
+    )
+    parser_languages.set_defaults(func=handle_practice_languages)
 
     # practice doctor
     practice_doctor_parser = practice_subparsers.add_parser(
