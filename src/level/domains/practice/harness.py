@@ -13,13 +13,13 @@ def _normalize_case(case: tuple[Any, ...] | tuple[Any, Any] | tuple[Any, Any, st
     else:
         inputs, expected, message = case
 
-    if not isinstance(inputs, (tuple, list)):
+    if not isinstance(inputs, tuple):
         inputs = (inputs,)
 
     return inputs, expected, message
 
 
-def _resolve_cases(cases: Iterable | Callable[[], Iterable]) -> list:
+def _resolve_cases(cases: Iterable | Callable[[], Iterable]) -> list[Any]:
     """Allow phases to provide either a list or a generator function."""
 
     if callable(cases):
@@ -157,9 +157,7 @@ def run_interview(
         if passed == total:
             if is_last_phase:
                 print()
-                print(f"✓ Phase {phase_index} passed ({passed}/{total}) in {total_duration:.3f}ms")
-            else:
-                print(f"✓ Phase {phase_index} passed ({passed}/{total}) in {total_duration:.3f}ms")
+            print(f"✓ Phase {phase_index} passed ({passed}/{total}) in {total_duration:.3f}ms")
             continue
 
         print()
@@ -167,9 +165,10 @@ def run_interview(
         return False
 
     if followups:
+        followups = list(followups)
         print("\n=== Follow-ups ===\n")
 
-        show_hints = bool(os.getenv("SHOW_HINTS"))
+        show_hints = os.getenv("SHOW_HINTS") == "1"
         hints_exist = any(isinstance(item, tuple) and item[1] for item in followups)
 
         for i, item in enumerate(followups, 1):
