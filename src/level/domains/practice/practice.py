@@ -80,6 +80,9 @@ def list_practice_languages(context: Context) -> list[str]:
         suffixes = Path(tmpl).suffixes
         if len(suffixes) >= 2:
             ext = suffixes[-2].lstrip(".")
+            # Ignore markdown templates which are generic fallbacks
+            if ext == "md":
+                continue
             langs.add(LANGUAGES.get(ext, ext))
 
     return sorted(langs)

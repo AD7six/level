@@ -27,6 +27,7 @@ from level.domains.practice import (
     review_latest_attempt,
 )
 from level.editor import open_in_editor
+from level.templates.loader import list_templates
 
 
 @lru_cache(maxsize=1)
@@ -161,6 +162,34 @@ def handle_practice_archive(context: Context, args: argparse.Namespace) -> None:
     print("Not implemented yet.")
 
 
+def handle_practice_types(context: Context, args: argparse.Namespace) -> None:
+    types = list_practice_types(context)
+    if not types:
+        print("No practice types available.")
+        return
+
+    print(render_list(types))
+
+
+def handle_practice_languages(context: Context, args: argparse.Namespace) -> None:
+    languages = list_practice_languages(context)
+    if not languages:
+        print("No practice languages available.")
+        return
+
+    print(render_list(languages))
+
+
+def handle_practice_templates(context: Context, args: argparse.Namespace) -> None:
+
+    templates = list_templates(context, "practice")
+    if not templates:
+        print("No practice templates available.")
+        return
+
+    print(render_list(templates))
+
+
 # ---------------------------------------------------------------------------
 # Doctor Handler
 # ---------------------------------------------------------------------------
@@ -249,6 +278,27 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
         help="Archive old exercises",
     )
     parser_archive.set_defaults(func=handle_practice_archive)
+
+    # practice templates
+    parser_templates = practice_subparsers.add_parser(
+        "templates",
+        help="List available practice templates",
+    )
+    parser_templates.set_defaults(func=handle_practice_templates)
+
+    # practice types
+    parser_types = practice_subparsers.add_parser(
+        "types",
+        help="List available practice types",
+    )
+    parser_types.set_defaults(func=handle_practice_types)
+
+    # practice languages
+    parser_languages = practice_subparsers.add_parser(
+        "languages",
+        help="List available practice languages",
+    )
+    parser_languages.set_defaults(func=handle_practice_languages)
 
     # practice doctor
     practice_doctor_parser = practice_subparsers.add_parser(
