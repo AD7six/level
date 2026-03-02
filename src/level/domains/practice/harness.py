@@ -1,3 +1,4 @@
+import os
 import time
 from collections.abc import Callable, Iterable, Sequence
 from typing import Any
@@ -167,13 +168,20 @@ def run_interview(
 
     if followups:
         print("\n=== Follow-ups ===\n")
+
+        show_hints = bool(os.getenv("SHOW_HINTS"))
+        hints_exist = any(isinstance(item, tuple) and item[1] for item in followups)
+
         for i, item in enumerate(followups, 1):
             if isinstance(item, tuple):
                 question, hint = item
                 print(f"{i}. {question}")
-                if hint:
+                if show_hints and hint:
                     print(f"   Hint: {hint}")
             else:
                 print(f"{i}. {item}")
+
+        if hints_exist and not show_hints:
+            print("\nRun with SHOW_HINTS=1 to see hints.")
 
     return True
