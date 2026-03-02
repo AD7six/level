@@ -59,23 +59,21 @@ def _practice_slug(session: object) -> str:
 
 def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     practice_date = date.fromisoformat(args.date) if args.date else None
-
     practice_type = getattr(args, "type", None) or "code"
 
     if getattr(args, "random", False):
-        selected = random.choice(DRILLS)
+        name = random.choice(DRILLS)
     else:
-        selected = getattr(args, "name", None) or "session"
+        name = getattr(args, "name", None) or "session"
 
-    name_component = f"{practice_type}-{selected}"
-
-    practice = create_practice(context, practice_date, name=name_component)
+    practice = create_practice(context, practice_date, name=name, practice_type=practice_type)
     print(f"Created practice session: {practice.slug}")
 
     # Open the initial exercise file if configured
-    if practice.path:
+    start_file = practice.start_file()
+    if start_file:
         open_in_editor(
-            practice.path / "00-start.py",
+            start_file,
             auto_open=context.config.auto_open,
             editor=context.config.editor,
         )

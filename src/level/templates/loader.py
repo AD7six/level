@@ -5,6 +5,7 @@ from importlib import resources
 from importlib.resources import as_file
 from importlib.resources.abc import Traversable
 from pathlib import Path
+from typing import Iterable
 
 from level.config import Context, get_data_root
 
@@ -118,3 +119,13 @@ def _collect_templates(context: Context, subdir: str) -> dict[str, Path]:
 
     logger.debug(f"Collected {len(templates)} templates for subdir '{subdir}'")
     return templates
+
+
+def list_templates(context: Context, subdir: str) -> Iterable[str]:
+    """
+    Return all templates under a given subdirectory (e.g. "practice").
+
+    User templates override built-in templates if the relative path matches.
+    """
+    templates = _collect_templates(context, subdir)
+    return templates.keys()
