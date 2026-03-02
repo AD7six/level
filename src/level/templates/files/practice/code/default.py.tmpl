@@ -52,7 +52,11 @@ def main():
         ),
     ]
 
-    run_interview(solve, phases)
+    followups = [
+        # ("Follow-up question", "Hint or guidance for the follow-up"),
+    ]
+
+    run_interview(solve, phases, followups=followups)
 
 if __name__ == "__main__":
     main()
