@@ -109,7 +109,7 @@ def create_practice(
     candidates = [
         f"{name}.{ext}.tmpl",
         f"{name}.md.tmpl",
-        f"default.{ext}.tmpl", # Type+language-specific fallback
+        f"default.{ext}.tmpl",  # Type+language-specific fallback
         "default.md.tmpl",  # Type-specific fallback
     ]
 

@@ -19,8 +19,6 @@ from level.domains.practice import (
     fix_practice,
     lint_practice,
     list_practice,
-    list_practice_languages,
-    list_practice_types,
     practice_metrics,
     review_latest_attempt,
 )
@@ -61,7 +59,7 @@ def _practice_slug(session: object) -> str:
 
 def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     practice_date = date.fromisoformat(args.date) if args.date else None
-    practice_type = getattr(args, "type", "code")
+    practice_type = args.type
     language = getattr(args, "language", "python")
 
     if getattr(args, "random", False):
