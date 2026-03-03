@@ -38,62 +38,6 @@ def _resolve_cases(cases: Iterable[Any] | Callable[[], Iterable[Any]]) -> list[A
     return list(cases)
 
 
-def run_tests(
-    solve_fn: Callable[..., Any],
-    test_cases: Iterable[tuple[Sequence[Any], Any, str]],
-) -> bool:
-    """
-    DEPRECATED: Use run_interview with a single phase instead.
-
-    Execute test cases in a style similar to interview platforms.
-
-    Each test case is a tuple:
-        (inputs, expected_output, description)
-    """
-
-    test_cases = list(test_cases)
-    total = len(test_cases)
-
-    total_start = time.perf_counter()
-    passed = 0
-
-    for i, raw_case in enumerate(test_cases, 1):
-        inputs, expected, message = _normalize_case(raw_case)
-        start = time.perf_counter()
-
-        try:
-            result = solve_fn(*inputs)
-        except Exception as exc:
-            duration = (time.perf_counter() - start) * 1000
-            print(f"✗ Test {i} ({message}) crashed after {duration:.3f}ms")
-            print(f"  input:    {inputs}")
-            print(f"  error:    {exc}")
-            break
-
-        duration = (time.perf_counter() - start) * 1000
-
-        if result == expected:
-            print(f"✓ Test {i} ({message}) passed in {duration:.3f}ms")
-            passed += 1
-            continue
-
-        print(f"❌ Test {i} ({message}) failed in {duration:.3f}ms")
-        print(f"  input:    {inputs}")
-        print(f"  expected: {expected}")
-        print(f"  got:      {result}")
-        break
-
-    total_duration = (time.perf_counter() - total_start) * 1000
-
-    print()
-    if passed == total:
-        print(f"✅ {passed}/{total} tests passed in {total_duration:.3f}ms")
-        return True
-
-    print(f"❌ {passed}/{total} tests passed in {total_duration:.3f}ms")
-    return False
-
-
 def _run_performance_check(durations: list[float]) -> bool:
     """
     Analyze scaling behavior assuming each test doubles input size.

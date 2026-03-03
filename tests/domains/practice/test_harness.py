@@ -1,33 +1,4 @@
-from level.domains.practice.harness import run_interview, run_tests
-
-
-def test_run_tests_passes(capsys):
-    def solve(x):
-        return x * 2
-
-    cases = [
-        ((2,), 4, "double 2"),
-        ((3,), 6, "double 3"),
-    ]
-
-    run_tests(solve, cases)
-
-    captured = capsys.readouterr()
-    assert "2 tests passed" in captured.out
-
-
-def test_run_tests_fails(capsys):
-    def solve(x):
-        return x + 1
-
-    cases = [
-        ((2,), 5, "incorrect expectation"),
-    ]
-
-    run_tests(solve, cases)
-
-    captured = capsys.readouterr()
-    assert "failed" in captured.out
+from level.domains.practice.harness import run_interview
 
 
 def test_run_interview_phases_pass(capsys):
