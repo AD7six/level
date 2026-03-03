@@ -109,6 +109,84 @@ def _run_performance_check(durations: list[float]) -> bool:
     return True
 
 
+def _run_phase(
+    solve_fn: Callable[..., Any],
+    phase_index: int,
+    phase_name: str,
+    phase_cases: (
+        Iterable[tuple[Sequence[Any], Any, str]]
+        | Callable[[], Iterable[tuple[Sequence[Any], Any, str]]]
+    ),
+    phase_options: dict[str, Any],
+    is_last_phase: bool,
+) -> bool:
+    """Execute a single interview phase. Returns True if phase passes."""
+
+    if is_last_phase:
+        print(f"\n=== Phase {phase_index}: {phase_name} ===\n")
+
+    test_cases = _resolve_cases(phase_cases)
+    total = len(test_cases)
+
+    total_start = time.perf_counter()
+    passed = 0
+    durations: list[float] = []
+
+    for i, raw_case in enumerate(test_cases, 1):
+        inputs, expected, message = _normalize_case(raw_case)
+        start = time.perf_counter()
+
+        try:
+            result = solve_fn(*inputs)
+        except Exception as exc:
+            duration = (time.perf_counter() - start) * 1000
+            print(f"❌ Test {i} ({message}) crashed after {duration:.3f}ms")
+            print(f"  input:    {inputs}")
+            print(f"  error:    {exc}")
+            break
+
+        duration = (time.perf_counter() - start) * 1000
+        durations.append(duration)
+
+        if result == expected:
+            if is_last_phase:
+                print(f"✅ Test {i} ({message}) passed in {duration:.3f}ms")
+            passed += 1
+            continue
+
+        if not is_last_phase:
+            print(f"\n=== Phase {phase_index}: {phase_name} ===\n")
+        print(f"❌ Test {i} ({message}) failed in {duration:.3f}ms")
+        print(f"  input:    {inputs}")
+        print(f"  expected: {expected}")
+        print(f"  got:      {result}")
+        break
+
+    total_duration = (time.perf_counter() - total_start) * 1000
+
+    # Optional scaling check
+    if phase_options.get("performance_check"):
+        total += 1  # count as a test
+        if _run_performance_check(durations):
+            passed += 1  # and count as passed
+
+    if passed == total:
+        if is_last_phase:
+            print()
+        print(
+            f"✅ Phase {phase_index} passed ({passed}/{total}) in "
+            f"{total_duration:.3f}ms"
+        )
+        return True
+
+    print()
+    print(
+        f"❌ Phase {phase_index} failed ({passed}/{total}) in "
+        f"{total_duration:.3f}ms"
+    )
+    return False
+
+
 def run_interview(
     solve_fn: Callable[..., Any],
     phases: Iterable[
@@ -156,69 +234,15 @@ def run_interview(
         phase_index = idx + 1
         is_last_phase = idx == last_phase_index
 
-        if is_last_phase:
-            print(f"\n=== Phase {phase_index}: {phase_name} ===\n")
-
-        test_cases = _resolve_cases(phase_cases)
-        total = len(test_cases)
-
-        total_start = time.perf_counter()
-        passed = 0
-        durations: list[float] = []
-
-        for i, raw_case in enumerate(test_cases, 1):
-            inputs, expected, message = _normalize_case(raw_case)
-            start = time.perf_counter()
-
-            try:
-                result = solve_fn(*inputs)
-            except Exception as exc:
-                duration = (time.perf_counter() - start) * 1000
-                print(f"❌ Test {i} ({message}) crashed after {duration:.3f}ms")
-                print(f"  input:    {inputs}")
-                print(f"  error:    {exc}")
-                break
-
-            duration = (time.perf_counter() - start) * 1000
-            durations.append(duration)
-
-            if result == expected:
-                if is_last_phase:
-                    print(f"✅ Test {i} ({message}) passed in {duration:.3f}ms")
-                passed += 1
-                continue
-
-            if not is_last_phase:
-                print(f"\n=== Phase {phase_index}: {phase_name} ===\n")
-            print(f"❌ Test {i} ({message}) failed in {duration:.3f}ms")
-            print(f"  input:    {inputs}")
-            print(f"  expected: {expected}")
-            print(f"  got:      {result}")
-            break
-
-        total_duration = (time.perf_counter() - total_start) * 1000
-
-        # Optional scaling check
-        if phase_options.get("performance_check"):
-            total += 1  # count as a test
-            if _run_performance_check(durations):
-                passed += 1  # and count as passed
-
-        if passed == total:
-            if is_last_phase:
-                print()
-            print(
-                f"✅ Phase {phase_index} passed ({passed}/{total}) in "
-                f"{total_duration:.3f}ms"
-            )
-            continue
-
-        print()
-        print(
-            f"❌ Phase {phase_index} failed ({passed}/{total}) in "
-            f"{total_duration:.3f}ms"
-        )
-        return False
+        if not _run_phase(
+            solve_fn,
+            phase_index,
+            phase_name,
+            phase_cases,
+            phase_options,
+            is_last_phase,
+        ):
+            return False
 
     if followups:
         followups = list(followups)
