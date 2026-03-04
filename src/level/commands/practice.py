@@ -21,7 +21,6 @@ from level.domains.practice import (
     fix_practice,
     lint_practice,
     list_practice,
-    list_practice_languages,
     list_practice_types,
     practice_metrics,
     review_latest_attempt,
@@ -97,30 +96,37 @@ def _practice_slug(exercise: object) -> str:
 def handle_practice_new(context: Context, args: argparse.Namespace) -> None:
     practice_date = date.fromisoformat(args.date) if args.date else None
     practice_type = args.type
-    language = args.language
 
-    if getattr(args, "random", False):
-        name = random.choice(DRILLS)
+    if args.random:
+        name: str = random.choice(DRILLS)
     else:
-        name = getattr(args, "name", "exercise")
+        if not args.name:
+            print("Error: you must provide a name or use --random.")
+            return
+        name = args.name
 
     practice = create_practice(
         context,
         practice_date,
         name=name,
         practice_type=practice_type,
-        language=language,
     )
     print(f"Created practice exercise: {practice.slug}")
 
     # Open the initial exercise file if configured
     start_file = practice.start_file()
     if start_file:
-        open_in_editor(
-            start_file,
-            auto_open=context.config.auto_open,
-            editor=context.config.editor,
-        )
+        try:
+            open_in_editor(
+                start_file,
+                auto_open=context.config.auto_open,
+                editor=context.config.editor,
+            )
+        except FileNotFoundError:
+            print(
+                f"Warning: editor '{context.config.editor}' not found. "
+                "Exercise created but not opened."
+            )
 
 
 def handle_practice_list(context: Context, args: argparse.Namespace) -> None:
@@ -169,15 +175,6 @@ def handle_practice_types(context: Context, args: argparse.Namespace) -> None:
         return
 
     print(render_list(sorted(types)))
-
-
-def handle_practice_languages(context: Context, args: argparse.Namespace) -> None:
-    languages = list_practice_languages(context)
-    if not languages:
-        print("No practice languages available.")
-        return
-
-    print(render_list(sorted(languages)))
 
 
 def handle_practice_templates(context: Context, args: argparse.Namespace) -> None:
@@ -235,13 +232,6 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
         f"({LazyValue(lambda: list_practice_types(_context_for_help()))})",
     )
     parser_new.add_argument(
-        "--language",
-        "-l",
-        default="python",
-        help="Language or extension for the exercise "
-        f"({LazyValue(lambda: list_practice_languages(_context_for_help()))})",
-    )
-    parser_new.add_argument(
         "--date",
         help="Optional ISO date (YYYY-MM-DD)",
     )
@@ -292,13 +282,6 @@ def register(subparsers: argparse._SubParsersAction[Any]) -> None:
         help="List available practice types",
     )
     parser_types.set_defaults(func=handle_practice_types)
-
-    # practice languages
-    parser_languages = practice_subparsers.add_parser(
-        "languages",
-        help="List available practice languages",
-    )
-    parser_languages.set_defaults(func=handle_practice_languages)
 
     # practice doctor
     practice_doctor_parser = practice_subparsers.add_parser(

@@ -1,0 +1,39 @@
+"""
+${TITLE}
+
+PROBLEM DESCRIPTION (to be filled in by problem author):
+
+- Clearly describe the problem here.
+- Define inputs and expected outputs.
+- Specify constraints and assumptions.
+- Include at least one concrete example.
+
+IMPORTANT:
+- Do NOT implement `solve`.
+- Do NOT modify any code below this docstring.
+- Only update the problem description above.
+
+The user will implement `solve(...)`.
+"""
+
+from level.domains.practice.harness import run_interview
+from tests import PHASES, FOLLOWUPS  
+
+
+def solve(*args):
+    """
+    Implement your solution here.
+
+    Args:
+        Define parameters clearly.
+
+    Returns:
+        Expected return value.
+    """
+    raise NotImplementedError("Implement the solution")
+
+def main():
+    run_interview(solve, PHASES, followups=FOLLOWUPS)
+
+if __name__ == "__main__":
+    main()

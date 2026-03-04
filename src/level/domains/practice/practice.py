@@ -23,17 +23,6 @@ class EditorOpener(Protocol):
     def __call__(self, path: Path, *, auto_open: bool, editor: str | None) -> bool: ...
 
 
-EXTENSIONS: dict[str, str] = {
-    "python": "py",
-    "go": "go",
-    "rust": "rs",
-    "java": "java",
-}
-
-# Build reverse lookup: extension -> language
-LANGUAGES = {ext: lang for lang, ext in EXTENSIONS.items()}
-
-
 @dataclass(frozen=True)
 class Practice:
     date: date
@@ -72,33 +61,13 @@ def list_practice_types(context: Context) -> list[str]:
     return sorted(types)
 
 
-def list_practice_languages(context: Context) -> list[str]:
-    """Return distinct languages derived from template filename extensions."""
-    langs: set[str] = set()
-
-    for tmpl in list_templates(context, "practice"):
-        suffixes = Path(tmpl).suffixes
-        if len(suffixes) >= 2:
-            ext = suffixes[-2].lstrip(".")
-            # Ignore markdown templates which are generic fallbacks
-            if ext == "md":
-                continue
-            langs.add(LANGUAGES.get(ext, ext))
-
-    return sorted(langs)
-
-
 def create_practice(
     context: Context,
     practice_date: date | None = None,
     practice_type: str = "code",
     name: str = "session",
-    language: str = "python",
 ) -> Practice:
     practice_date = practice_date or date.today()
-    ext = EXTENSIONS.get(
-        language, language
-    )  # Default to language as extension if not in mapping
     root = _practice_root(context)
 
     base_slug = _practice_slug(practice_date, name)
@@ -107,38 +76,52 @@ def create_practice(
     slug = practice_dir.name
     practice_dir.mkdir(parents=True, exist_ok=False)
 
-    # Collect available templates for this practice type
-    available = set(list_templates(context, f"practice/{practice_type}"))
+    # Resolve template directory (name-specific or default)
+    template_base = f"practice/{practice_type}"
+    available_templates = list_templates(context, template_base)
 
-    candidates = [
-        f"{name}.{ext}.tmpl",
-        f"{name}.md.tmpl",
-        f"default.{ext}.tmpl",  # Type+language-specific fallback
-        "default.md.tmpl",  # Type-specific fallback
-    ]
+    # Extract top-level template directories
+    template_dirs: set[str] = set()
+    for tmpl in available_templates:
+        parts = Path(tmpl).parts
+        if parts:
+            template_dirs.add(parts[0])
 
-    template_used = None
-    for candidate in candidates:
-        if candidate in available:
-            template_used = f"practice/{practice_type}/{candidate}"
-            break
+    if name in template_dirs:
+        template_dir = f"{template_base}/{name}"
+    else:
+        template_dir = f"{template_base}/default"
 
-    # Final guaranteed fallback
-    if template_used is None:
-        template_used = "practice/default.md.tmpl"
+    template_used = template_dir
 
-    # Derive output extension from template name
-    suffixes = Path(template_used).suffixes
-    ext = suffixes[-2] if len(suffixes) >= 2 else ""
-    output_file = practice_dir / f"00-start{ext}"
+    # Render all files within the template directory
+    rendered_start_file: str | None = None
 
-    render_template_to_path(
-        context=context,
-        template_name=template_used,
-        variables={"date": practice_date.isoformat()},
-        output_path=output_file,
-        overwrite=False,
-    )
+    for tmpl in available_templates:
+        parts = Path(tmpl).parts
+        if not parts:
+            continue
+        if parts[0] != Path(template_dir).name:
+            continue
+
+        rel_path = Path(*parts[1:])
+        output_path = practice_dir / rel_path.with_suffix("")
+
+        render_template_to_path(
+            context=context,
+            template_name=f"{template_base}/{tmpl}",
+            variables={"date": practice_date.isoformat()},
+            output_path=output_path,
+            overwrite=False,
+        )
+
+        if output_path.name.startswith("00-"):
+            rendered_start_file = output_path.name
+
+    if rendered_start_file is None:
+        raise RuntimeError(
+            f"Template '{template_dir}' did not produce a 00-* start file."
+        )
 
     # Write meta.toml (template recorded for future use)
     write_meta_toml(
@@ -147,9 +130,8 @@ def create_practice(
             "date": practice_date,
             "type": practice_type,
             "name": name,
-            "language": language,
             "template": template_used,
-            "start_file": output_file.name,
+            "start_file": rendered_start_file,
             "reviewed_count": 0,
             "last_reviewed": None,
         },
@@ -160,7 +142,7 @@ def create_practice(
         slug=slug,
         path=practice_dir,
         template=template_used,
-        start_filename=output_file.name,
+        start_filename=rendered_start_file,
     )
 
 

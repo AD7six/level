@@ -129,3 +129,23 @@ def list_templates(context: Context, subdir: str) -> Iterable[str]:
     """
     templates = _collect_templates(context, subdir)
     return templates.keys()
+
+
+def list_template_dirs(context: Context, subdir: str) -> Iterable[str]:
+    """
+    Return top-level template directories under a given subdirectory.
+
+    Example:
+        list_template_dirs(context, "practice/code")
+        -> ["default", "sliding-window"]
+    """
+    templates = _collect_templates(context, subdir)
+
+    dirs: set[str] = set()
+
+    for rel_path in templates.keys():
+        parts = Path(rel_path).parts
+        if parts:
+            dirs.add(parts[0])
+
+    return sorted(dirs)

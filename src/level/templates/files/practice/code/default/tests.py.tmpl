@@ -1,0 +1,100 @@
+"""
+${TITLE}
+
+This file defines the interview problem.
+
+Authoring requirements for this template:
+
+1. There must be at least **three phases**.
+2. Each phase must introduce a meaningful change:
+   - New constraint
+   - New edge case
+   - Or new performance requirement
+3. The final phase should always include a valid performance test using
+   progressively doubling input sizes.
+4. Performance phases MUST use {"performance_check": True}.
+
+This file is consumed by the interview harness. Keep structure exact.
+"""
+
+# PHASE STRUCTURE:
+# Each phase is either:
+# (
+#     "Phase name",
+#     [
+#         (input_args_tuple, expected_output, description),
+#     ],
+# )
+# or
+# (
+#     "Phase name",
+#     test_case_generator_function,
+#     {"performance_check": True}
+# )
+
+
+# -----------------------------------------------------------------------------
+# Base problem
+# -----------------------------------------------------------------------------
+
+PHASES = [
+    (
+        "Base problem",
+        [
+            # Replace with real problem examples.
+            # Example format:
+            # (([1, 2, 3],), 6, "Basic example"),
+            (([1, 2, 3],), 6, "Example placeholder — replace me"),
+        ],
+    ),
+
+
+# -----------------------------------------------------------------------------
+# Twist 1-n – edge cases or constraint shift
+# -----------------------------------------------------------------------------
+
+    (
+        "Twist 1 – edge cases",
+        [
+            # Add cases that break naive implementations.
+            # Examples:
+            # (([],), 0, "Empty input"),
+            # (([-1, -2, -3],), -6, "Negative values"),
+        ],
+    ),
+
+
+# -----------------------------------------------------------------------------
+# Final – performance phase
+# -----------------------------------------------------------------------------
+
+    (
+        "Final – performance (must scale linearly)",
+        lambda: [
+            # IMPORTANT:
+            # These inputs MUST double each iteration.
+            # This enables automatic Big-O estimation.
+
+            # Replace the body below with a generator appropriate
+            # for your problem domain.
+
+            # Example pattern (replace as needed):
+            ((list(range(n)),), sum(range(n)), f"Size {n}")
+            for n in (1_000, 2_000, 4_000)
+        ],
+        {"performance_check": True},
+    ),
+]
+
+
+# -----------------------------------------------------------------------------
+# Conceptual follow-up questions
+# -----------------------------------------------------------------------------
+
+FOLLOWUPS = [
+    # Add follow-up questions that test deeper understanding of the problem,
+    # generic examples below
+    ("What is the time complexity?", None),
+    ("What is the space complexity?", None),
+    ("How would this change if the input were a stream?", None),
+]
